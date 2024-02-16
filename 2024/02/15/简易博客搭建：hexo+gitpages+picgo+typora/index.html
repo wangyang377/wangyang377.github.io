@@ -16,22 +16,29 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
   <meta name="theme-color" content="#f8f8f8">
   
-  <title>wangyang377_blog</title>
+  <title>简易博客搭建：hexo+gitpages+picgo+typora - wangyang377_blog</title>
 
   
-    <meta name="description" content="简易博客搭建：hexo+gitpages+picgo+typora博客在2024年可能已经是一个古老的名词了，大家都早已习惯从抖音、小红书、B站、知乎等各类APP上获取信息了，但是所有的社区用户都受困与审核、信息茧房以及越来越极端的网络环境。 一个独属于自己的、自由的小花园愈发可贵。 本文会详细介绍如何用hexo+github pages+picgo+typora实现0成本、易上手、无写作门槛的个">
+    <meta name="description" content="博客在2024年可能已经是一个古老的名词了，大家都早已习惯从抖音、小红书、B站、知乎等各类APP上获取信息了，但是所有的社区用户都受困与审核、信息茧房以及越来越极端的网络环境，一个独属于自己的、自由的小花园愈发可贵。 更何况作为程序员，一个技术博客也是很好的整理、反思和交流的方式 本文会详细介绍如何用hexo+github pages+picgo+typora实现0成本、易上手、无写作门槛的个人博">
 <meta property="og:type" content="article">
-<meta property="og:title" content="wangyang377_blog">
+<meta property="og:title" content="简易博客搭建：hexo+gitpages+picgo+typora">
 <meta property="og:url" content="https://wangyang377.github.io/2024/02/15/%E7%AE%80%E6%98%93%E5%8D%9A%E5%AE%A2%E6%90%AD%E5%BB%BA%EF%BC%9Ahexo+gitpages+picgo+typora/index.html">
 <meta property="og:site_name" content="wangyang377_blog">
-<meta property="og:description" content="简易博客搭建：hexo+gitpages+picgo+typora博客在2024年可能已经是一个古老的名词了，大家都早已习惯从抖音、小红书、B站、知乎等各类APP上获取信息了，但是所有的社区用户都受困与审核、信息茧房以及越来越极端的网络环境。 一个独属于自己的、自由的小花园愈发可贵。 本文会详细介绍如何用hexo+github pages+picgo+typora实现0成本、易上手、无写作门槛的个">
+<meta property="og:description" content="博客在2024年可能已经是一个古老的名词了，大家都早已习惯从抖音、小红书、B站、知乎等各类APP上获取信息了，但是所有的社区用户都受困与审核、信息茧房以及越来越极端的网络环境，一个独属于自己的、自由的小花园愈发可贵。 更何况作为程序员，一个技术博客也是很好的整理、反思和交流的方式 本文会详细介绍如何用hexo+github pages+picgo+typora实现0成本、易上手、无写作门槛的个人博">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="https://raw.githubusercontent.com/wangyang377/blogImages/main/image-20240215165119005.png">
 <meta property="og:image" content="https://raw.githubusercontent.com/wangyang377/blogImages/main/image-20240215170406393.png">
 <meta property="og:image" content="https://raw.githubusercontent.com/wangyang377/blogImages/main/image-20240215171439150.png">
 <meta property="og:image" content="https://raw.githubusercontent.com/wangyang377/blogImages/main/image-20240215171114490.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/wangyang377/blogImages/main/image-20240216082151301.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/wangyang377/blogImages/main/image-20240216082250117.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/wangyang377/blogImages/main/image-20240216090658364.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/wangyang377/blogImages/main/image-20240216090500693.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/wangyang377/blogImages/main/image-20240216090807273.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/wangyang377/blogImages/main/image-20240216091009016.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/wangyang377/blogImages/main/image-20240216091203231.png">
 <meta property="article:published_time" content="2024-02-15T08:32:31.356Z">
-<meta property="article:modified_time" content="2024-02-15T12:51:07.917Z">
+<meta property="article:modified_time" content="2024-02-16T02:15:51.030Z">
 <meta property="article:author" content="wangyang377">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:image" content="https://raw.githubusercontent.com/wangyang377/blogImages/main/image-20240215165119005.png">
@@ -67,7 +74,7 @@
 </div>
 <div class="widgets">
 
-<widget class="widget-wrapper toc single" id="data-toc" collapse="false"><div class="widget-header dis-select"><span class="name">本文目录</span></div><div class="widget-body fs14"><div class="doc-tree active"><ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#hexo%E5%BF%AB%E9%80%9F%E5%85%A5%E9%97%A8"><span class="toc-text">hexo快速入门</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%AE%89%E8%A3%85"><span class="toc-text">安装</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%AE%89%E8%A3%85%E5%89%8D%E6%8F%90"><span class="toc-text">安装前提</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%AE%89%E8%A3%85hexo"><span class="toc-text">安装hexo</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%BB%BA%E7%AB%99"><span class="toc-text">建站</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E9%83%A8%E7%BD%B2gitpages"><span class="toc-text">部署gitpages</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E9%83%A8%E7%BD%B2"><span class="toc-text">部署</span></a></li></ol></li></ol></li></ol></div></div></widget>
+<widget class="widget-wrapper toc single" id="data-toc" collapse="false"><div class="widget-header dis-select"><span class="name">本文目录</span></div><div class="widget-body fs14"><div class="doc-tree active"><ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#hexo%E5%BF%AB%E9%80%9F%E5%85%A5%E9%97%A8"><span class="toc-text">hexo快速入门</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%AE%89%E8%A3%85"><span class="toc-text">安装</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%AE%89%E8%A3%85%E5%89%8D%E6%8F%90"><span class="toc-text">安装前提</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%AE%89%E8%A3%85hexo"><span class="toc-text">安装hexo</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%BB%BA%E7%AB%99"><span class="toc-text">建站</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E9%83%A8%E7%BD%B2gitpages"><span class="toc-text">部署gitpages</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E9%83%A8%E7%BD%B2"><span class="toc-text">部署</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E6%80%BB%E7%BB%93"><span class="toc-text">总结</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%B8%AA%E6%80%A7%E5%8C%96"><span class="toc-text">个性化</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%9B%BE%E5%BA%8A%EF%BC%9APicGo-GitHub"><span class="toc-text">图床：PicGo+GitHub</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E9%85%8D%E7%BD%AEgithub"><span class="toc-text">配置github</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E9%85%8D%E7%BD%AEPicGo"><span class="toc-text">配置PicGo</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E9%85%8D%E7%BD%AEtypora"><span class="toc-text">配置typora</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%86%99%E4%BD%9C"><span class="toc-text">写作</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%96%87%E7%AB%A0%E6%A0%87%E7%AD%BE%E3%80%81%E5%88%86%E7%B1%BB"><span class="toc-text">文章标签、分类</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%AD%90%E5%88%86%E7%B1%BB"><span class="toc-text">子分类</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%A4%9A%E4%B8%AA%E5%88%86%E7%B1%BB"><span class="toc-text">多个分类</span></a></li></ol></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%80%BB%E7%BB%93-1"><span class="toc-text">总结</span></a></li></ol></div></div></widget>
 
 
 
@@ -75,7 +82,7 @@
 
 
 
-<widget class="widget-wrapper post-list"><div class="widget-header dis-select"><span class="name">最近更新</span></div><div class="widget-body fs14"><a class="item title" href="/2024/02/15/hello-world/"><span class="title">Hello World</span></a></div></widget>
+<widget class="widget-wrapper post-list"><div class="widget-header dis-select"><span class="name">最近更新</span></div><div class="widget-body fs14"><a class="item title active" href="/2024/02/15/%E7%AE%80%E6%98%93%E5%8D%9A%E5%AE%A2%E6%90%AD%E5%BB%BA%EF%BC%9Ahexo+gitpages+picgo+typora/"><span class="title">简易博客搭建：hexo+gitpages+picgo+typora</span><svg class="active-icon" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><path fill="currentColor" d="M21 11.098v4.993c0 3.096 0 4.645-.734 5.321c-.35.323-.792.526-1.263.58c-.987.113-2.14-.907-4.445-2.946c-1.02-.901-1.529-1.352-2.118-1.47a2.225 2.225 0 0 0-.88 0c-.59.118-1.099.569-2.118 1.47c-2.305 2.039-3.458 3.059-4.445 2.945a2.238 2.238 0 0 1-1.263-.579C3 20.736 3 19.188 3 16.091v-4.994C3 6.81 3 4.666 4.318 3.333C5.636 2 7.758 2 12 2c4.243 0 6.364 0 7.682 1.332C21 4.665 21 6.81 21 11.098" opacity=".5"/><path fill="currentColor" d="M9 5.25a.75.75 0 0 0 0 1.5h6a.75.75 0 0 0 0-1.5z"/></svg></a><a class="item title" href="/2024/02/15/hello-world/"><span class="title">Hello World</span></a></div></widget>
 </div>
 
 </div></aside><div class="l_main" id="main">
@@ -89,13 +96,19 @@
     
 <div class="top bread-nav footnote"><div class="left"><div class="flex-row" id="breadcrumb"><a class="cap breadcrumb" href="/">主页</a>
 <span class="sep"></span><a class="cap breadcrumb" href="/">文章</a></div>
-<div class="flex-row" id="post-meta"><span class="text created">发布于：<time datetime="2024-02-15T08:32:31.356Z">2024-02-15</time></span><span class="sep updated"></span><span class="text updated">更新于：<time datetime="2024-02-15T12:51:07.917Z">2024-02-15</time></span></div></div>
+<div class="flex-row" id="post-meta"><span class="text created">发布于：<time datetime="2024-02-15T08:32:31.356Z">2024-02-15</time></span><span class="sep updated"></span><span class="text updated">更新于：<time datetime="2024-02-16T02:15:51.030Z">2024-02-16</time></span></div></div>
 </div>
 
     
+    <div class="bottom">
+      <div class="text-area">
+        <h1 class="text title"><span>简易博客搭建：hexo+gitpages+picgo+typora</span></h1>
+      </div>
+    </div>
+    
   </div>
-  </div><article class="md-text content"><h1 id="简易博客搭建：hexo-gitpages-picgo-typora"><a href="#简易博客搭建：hexo-gitpages-picgo-typora" class="headerlink" title="简易博客搭建：hexo+gitpages+picgo+typora"></a>简易博客搭建：hexo+gitpages+picgo+typora</h1><p>博客在2024年可能已经是一个古老的名词了，大家都早已习惯从抖音、小红书、B站、知乎等各类APP上获取信息了，但是所有的社区用户都受困与审核、信息茧房以及越来越极端的网络环境。</p>
-<p>一个独属于自己的、自由的小花园愈发可贵。</p>
+  </div><article class="md-text content"><p>博客在2024年可能已经是一个古老的名词了，大家都早已习惯从抖音、小红书、B站、知乎等各类APP上获取信息了，但是所有的社区用户都受困与审核、信息茧房以及越来越极端的网络环境，一个独属于自己的、自由的小花园愈发可贵。</p>
+<p>更何况作为程序员，一个技术博客也是很好的整理、反思和交流的方式</p>
 <p>本文会详细介绍如何用hexo+github pages+picgo+typora实现0成本、易上手、无写作门槛的个人博客。</p>
 <h2 id="hexo快速入门"><a href="#hexo快速入门" class="headerlink" title="hexo快速入门"></a>hexo快速入门</h2><p>hexo官方中文文档：<a target="_blank" rel="noopener" href="https://hexo.io/zh-cn/index.html">Hexo</a></p>
 <h3 id="安装"><a href="#安装" class="headerlink" title="安装"></a>安装</h3><h4 id="安装前提"><a href="#安装前提" class="headerlink" title="安装前提"></a>安装前提</h4><ul>
@@ -106,7 +119,7 @@
 
 <p><img class="lazy" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAABGdBTUEAALGPC/xhBQAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAAaADAAQAAAABAAAAAQAAAADa6r/EAAAAC0lEQVQIHWNgAAIAAAUAAY27m/MAAAAASUVORK5CYII=" data-src="https://raw.githubusercontent.com/wangyang377/blogImages/main/image-20240215165119005.png" alt="image-20240215165119005"></p>
 <h4 id="建站"><a href="#建站" class="headerlink" title="建站"></a>建站</h4><p>hexo的使用非常简单</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_">$ </span><span class="language-bash">hexo init &lt;folder&gt;</span></span><br><span class="line"><span class="meta prompt_">$ </span><span class="language-bash"><span class="built_in">cd</span> &lt;folder&gt;</span></span><br></pre></td></tr></table></figure>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_">$ </span><span class="language-bash">hexo init &lt;folder&gt;</span></span><br><span class="line">//所有文件会在&lt;folder&gt;下自动创建</span><br><span class="line"><span class="meta prompt_">$ </span><span class="language-bash"><span class="built_in">cd</span> &lt;folder&gt;</span></span><br></pre></td></tr></table></figure>
 
 <p>建成后目录结构如下</p>
 <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">.</span><br><span class="line">├── _config.yml</span><br><span class="line">├── package.json</span><br><span class="line">├── scaffolds</span><br><span class="line">├── source</span><br><span class="line">|   ├── _drafts</span><br><span class="line">|   └── _posts</span><br><span class="line">└── themes</span><br></pre></td></tr></table></figure>
@@ -116,11 +129,11 @@
 <p>hexo提供了简单的命令将md文件转成静态页面</p>
 <figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">//生成静态页面</span><br><span class="line">hexo g</span><br><span class="line"></span><br><span class="line">//本地查看静态页面</span><br><span class="line">hexo s</span><br></pre></td></tr></table></figure>
 
-<p>浏览器访问<a href="http://localhost:4000，就可以打开博客了，里面现在只有一篇文章，_source/_posts下的hello-world.md">http://localhost:4000，就可以打开博客了，里面现在只有一篇文章，_source/_posts下的hello-world.md</a></p>
-<h4 id="部署gitpages"><a href="#部署gitpages" class="headerlink" title="部署gitpages"></a>部署gitpages</h4><p>现在我们还只能在本地访问自己的博客，但个人博客最终一定是要部署到互联网上让所有人都能看到的，就像所有人都能访问<a target="_blank" rel="noopener" href="http://www.baidu.com一样/">www.baidu.com一样</a></p>
+<p>浏览器访问<a target="_blank" rel="noopener" href="http://localhost:4000/">http://localhost:4000</a> 就可以打开博客了，现在里面只有一篇文章，_source&#x2F;_posts下的hello-world.md</p>
+<h4 id="部署gitpages"><a href="#部署gitpages" class="headerlink" title="部署gitpages"></a>部署gitpages</h4><p>现在我们还只能在本地访问自己的博客，但个人博客最终一定是要部署到互联网上让所有人都能看到的，就像所有人都能访问<a target="_blank" rel="noopener" href="http://www.baidu.com/">www.baidu.com</a> 一样</p>
 <p>通过GitHub Pages可以很轻易的实现</p>
 <p>在github上新建一个仓库，名为username.github.io</p>
-<p>!注意:这里的仓库名不要轻易改变，会影响到最终的博客网址，标准设置的仓库名最终可以简单的通过<a target="_blank" rel="noopener" href="https://username.github.io/%E8%AE%BF%E9%97%AE%EF%BC%8C%E5%90%A6%E5%88%99%E8%AE%BF%E9%97%AE%E5%9C%B0%E5%9D%80%E4%BC%9A%E6%98%AF%E5%85%A8%E8%B7%AF%E5%BE%84%E8%BF%98%E5%8F%AF%E8%83%BD%E5%AF%BC%E8%87%B4css%E6%A0%B7%E5%BC%8F%E5%A4%B1%E6%95%88%E7%AD%89%E7%AD%89%E9%97%AE%E9%A2%98">https://username.github.io/访问，否则访问地址会是全路径还可能导致css样式失效等等问题</a></p>
+<p>!注意:这里的仓库名不要轻易改变，会影响到最终的博客网址，标准设置的仓库名最终可以简单的通过<a target="_blank" rel="noopener" href="https://username.github.io/">https://username.github.io/</a> 访问，否则访问地址会是全路径还可能导致css样式失效等等问题</p>
 <p><img class="lazy" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAABGdBTUEAALGPC/xhBQAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAAaADAAQAAAABAAAAAQAAAADa6r/EAAAAC0lEQVQIHWNgAAIAAAUAAY27m/MAAAAASUVORK5CYII=" data-src="https://raw.githubusercontent.com/wangyang377/blogImages/main/image-20240215170406393.png" alt="image-20240215170406393"></p>
 <p>然后修改 _config.yml 文件，找到 Deployment</p>
 <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"># Deployment</span><br><span class="line">## Docs: https://hexo.io/docs/deployment.html</span><br><span class="line">deploy:</span><br><span class="line"> type: git</span><br><span class="line"> repo: &#x27;替换为github仓库的ssh地址&#x27;</span><br><span class="line"> branch: master</span><br></pre></td></tr></table></figure>
@@ -134,6 +147,68 @@
 
 <p><img class="lazy" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAABGdBTUEAALGPC/xhBQAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAAaADAAQAAAABAAAAAQAAAADa6r/EAAAAC0lEQVQIHWNgAAIAAAUAAY27m/MAAAAASUVORK5CYII=" data-src="https://raw.githubusercontent.com/wangyang377/blogImages/main/image-20240215171439150.png" alt="image-20240215171439150"></p>
 <p><img class="lazy" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAABGdBTUEAALGPC/xhBQAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAAaADAAQAAAABAAAAAQAAAADa6r/EAAAAC0lEQVQIHWNgAAIAAAUAAY27m/MAAAAASUVORK5CYII=" data-src="https://raw.githubusercontent.com/wangyang377/blogImages/main/image-20240215171114490.png" alt="image-20240215171114490"></p>
+<p>最后进入settings界面，开启github pages</p>
+<p><img class="lazy" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAABGdBTUEAALGPC/xhBQAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAAaADAAQAAAABAAAAAQAAAADa6r/EAAAAC0lEQVQIHWNgAAIAAAUAAY27m/MAAAAASUVORK5CYII=" data-src="https://raw.githubusercontent.com/wangyang377/blogImages/main/image-20240216082151301.png" alt="image-20240216082151301"></p>
+<p>访问<a target="_blank" rel="noopener" href="https://username.github.io/%E5%8D%B3%E5%8F%AF">https://username.github.io/即可</a></p>
+<p><img class="lazy" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAABGdBTUEAALGPC/xhBQAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAAaADAAQAAAABAAAAAQAAAADa6r/EAAAAC0lEQVQIHWNgAAIAAAUAAY27m/MAAAAASUVORK5CYII=" data-src="https://raw.githubusercontent.com/wangyang377/blogImages/main/image-20240216082250117.png" alt="image-20240216082250117"></p>
+<h4 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h4><p>写作流程非常简单</p>
+<ul>
+<li>在_source&#x2F;_posts文件夹下创建markdown文件</li>
+<li>hexo g生成静态页面</li>
+<li>hexo s本地预览页面是否正常（GitHub pages会自动更新，但是更新有延迟，所以日常建议先本地预览，再deploy到GitHub）</li>
+<li>hexo d将静态页面上传到github 仓库</li>
+<li>访问github pages</li>
+</ul>
+<h3 id="个性化"><a href="#个性化" class="headerlink" title="个性化"></a>个性化</h3><p>hexo提供了丰富的主题插件：<a target="_blank" rel="noopener" href="https://hexo.io/themes/">Themes | Hexo</a></p>
+<p>主题作者都提供了详细的安装说明和演示页面，这里不再赘述</p>
+<p>我用的是stellar：<a target="_blank" rel="noopener" href="https://xaoxuu.com/wiki/stellar/">Stellar：开始您全新的博客之旅 - XAOXUU</a></p>
+<h2 id="图床：PicGo-GitHub"><a href="#图床：PicGo-GitHub" class="headerlink" title="图床：PicGo+GitHub"></a>图床：PicGo+GitHub</h2><p>markdown不是MS word那样的富文本编辑器，markdown文件是不能内嵌图片的，只能通过链接的方式引用</p>
+<p>一般本地写作markdown都需要用一个额外的文件夹保存png&#x2F;jpg文件，然后通过相对路径或者绝对路径引用</p>
+<p>但是部署在网上的博客是不存在本地文件夹的，所以需要一个互联网上的文件夹，也就是图床</p>
+<p>这里同样用github pages搭建一个免费0成本的图床</p>
+<h3 id="配置github"><a href="#配置github" class="headerlink" title="配置github"></a>配置github</h3><ul>
+<li>创建github 仓库</li>
+<li>仓库里添加一个简单的index.html文件，否则不会提供GitHub pages的功能<ul>
+<li><img class="lazy" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAABGdBTUEAALGPC/xhBQAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAAaADAAQAAAABAAAAAQAAAADa6r/EAAAAC0lEQVQIHWNgAAIAAAUAAY27m/MAAAAASUVORK5CYII=" data-src="https://raw.githubusercontent.com/wangyang377/blogImages/main/image-20240216090658364.png" alt="image-20240216090658364"></li>
+</ul>
+</li>
+<li>开启GitHub pages</li>
+</ul>
+<h3 id="配置PicGo"><a href="#配置PicGo" class="headerlink" title="配置PicGo"></a>配置PicGo</h3><ul>
+<li>下载PicGo<ul>
+<li><a target="_blank" rel="noopener" href="https://picgo.github.io/PicGo-Doc/en/guide/">PicGo is Here | PicGo</a></li>
+</ul>
+</li>
+<li>配置github 图床<ul>
+<li>需要访问 <a target="_blank" rel="noopener" href="https://github.com/settings/tokens">https://github.com/settings/tokens</a> 获取token</li>
+<li><img class="lazy" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAABGdBTUEAALGPC/xhBQAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAAaADAAQAAAABAAAAAQAAAADa6r/EAAAAC0lEQVQIHWNgAAIAAAUAAY27m/MAAAAASUVORK5CYII=" data-src="https://raw.githubusercontent.com/wangyang377/blogImages/main/image-20240216090500693.png" alt="image-20240216090500693"></li>
+<li><img class="lazy" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAABGdBTUEAALGPC/xhBQAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAAaADAAQAAAABAAAAAQAAAADa6r/EAAAAC0lEQVQIHWNgAAIAAAUAAY27m/MAAAAASUVORK5CYII=" data-src="https://raw.githubusercontent.com/wangyang377/blogImages/main/image-20240216090807273.png" alt="image-20240216090807273"></li>
+</ul>
+</li>
+<li>上传一张图片测试<ul>
+<li><img class="lazy" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAABGdBTUEAALGPC/xhBQAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAAaADAAQAAAABAAAAAQAAAADa6r/EAAAAC0lEQVQIHWNgAAIAAAUAAY27m/MAAAAASUVORK5CYII=" data-src="https://raw.githubusercontent.com/wangyang377/blogImages/main/image-20240216091009016.png" alt="image-20240216091009016"></li>
+<li>图片上传完成之后会返回一个markdown的可用链接，直接粘贴到markdown编辑器中就可以预览图片了</li>
+</ul>
+</li>
+</ul>
+<h3 id="配置typora"><a href="#配置typora" class="headerlink" title="配置typora"></a>配置typora</h3><p>但是这样一个一个手动上传图片然后粘贴到markdown编辑器里太麻烦了</p>
+<p>个人推荐使用typora，提供了集成PicGo的功能，无需任何额外操作，直接粘贴图片，typora会自动上传图片、转换图片路径为图库路径、所见即所得，非常好用</p>
+<p><img class="lazy" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAABGdBTUEAALGPC/xhBQAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAAaADAAQAAAABAAAAAQAAAADa6r/EAAAAC0lEQVQIHWNgAAIAAAUAAY27m/MAAAAASUVORK5CYII=" data-src="https://raw.githubusercontent.com/wangyang377/blogImages/main/image-20240216091203231.png" alt="image-20240216091203231"></p>
+<h2 id="写作"><a href="#写作" class="headerlink" title="写作"></a>写作</h2><p><a target="_blank" rel="noopener" href="https://hexo.io/zh-cn/docs/front-matter">Front-matter | Hexo</a></p>
+<h3 id="文章标签、分类"><a href="#文章标签、分类" class="headerlink" title="文章标签、分类"></a>文章标签、分类</h3><p>在新建的文章开头编辑文章的题目，作者，日期，标签等。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">---</span><br><span class="line">title: test</span><br><span class="line">date: 2020-10-17 17:24:36</span><br><span class="line">author: hiyo</span><br><span class="line">copyright: true</span><br><span class="line">tags:</span><br><span class="line">  - 标签1    </span><br><span class="line">  - 标签2</span><br><span class="line">categories: 分类</span><br><span class="line">---</span><br></pre></td></tr></table></figure>
+
+<p>typora中建议在源码模式下进行编辑这部分内容</p>
+<h4 id="子分类"><a href="#子分类" class="headerlink" title="子分类"></a>子分类</h4><p>将该文章放到 Sports&#x2F;Baseball 这个分类下。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">categories:	</span><br><span class="line">	- Sports</span><br><span class="line">	- Baseball </span><br></pre></td></tr></table></figure>
+
+<p>或者：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">categories:</span><br><span class="line">	- [Sports,Baseball]</span><br></pre></td></tr></table></figure>
+
+<h4 id="多个分类"><a href="#多个分类" class="headerlink" title="多个分类"></a>多个分类</h4><p>将文章同时分到两个或者多个不同的类目下</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">categories:  </span><br><span class="line">  - [Sports]  </span><br><span class="line">  - [Play]</span><br><span class="line">categories:  </span><br><span class="line">  - [Sports,Baseball]</span><br><span class="line">  - [Play]</span><br></pre></td></tr></table></figure>
+
+<h2 id="总结-1"><a href="#总结-1" class="headerlink" title="总结"></a>总结</h2><p>hexo+gitpages+picgo+typora基本可以实现0部署成本+低写作门槛，不过个人博客的意义还是在于内容本身，我今后也会把学习工作中的心得和文档整理到博客上分享交流，立个小flag，三天一更新。</p>
 
 <div class="article-footer fs14">
     <section id="license">
