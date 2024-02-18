@@ -1,0 +1,401 @@
+
+<!DOCTYPE html><html lang="zh-CN">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="hexo-theme" content="https://github.com/xaoxuu/hexo-theme-stellar/tree/1.26.8" theme-name="Stellar" theme-version="1.26.8">
+  
+  <meta name="generator" content="Hexo 7.1.1">
+  <meta http-equiv='x-dns-prefetch-control' content='on' />
+  
+  <meta name="renderer" content="webkit">
+  <meta name="force-rendering" content="webkit">
+  <meta http-equiv="X-UA-Compatible" content="IE=Edge,chrome=1">
+  <meta name="HandheldFriendly" content="True" >
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="theme-color" content="#f8f8f8">
+  
+  <title>MapReduce——countword - wangyang377_blog</title>
+
+  
+    <meta name="description" content="吐槽代码一定得要自己写一遍，对于mapreduce，mentor安排的学习目标并不困难，了解思想学习原理，知道怎么编写mapreduce程序，能够实现一个join操作，但是真上手还是小坑不断，就说wordcount wordcount绝对算是简单的不能再简单了，不存在任何编程和理解上的难度，但是万万没想到，nativeio竟然会出问题  1Exception in thread &quot;mai">
+<meta property="og:type" content="article">
+<meta property="og:title" content="MapReduce——countword">
+<meta property="og:url" content="https://wangyang377.github.io/2024/02/16/MapReduce%E2%80%94%E2%80%94countword/index.html">
+<meta property="og:site_name" content="wangyang377_blog">
+<meta property="og:description" content="吐槽代码一定得要自己写一遍，对于mapreduce，mentor安排的学习目标并不困难，了解思想学习原理，知道怎么编写mapreduce程序，能够实现一个join操作，但是真上手还是小坑不断，就说wordcount wordcount绝对算是简单的不能再简单了，不存在任何编程和理解上的难度，但是万万没想到，nativeio竟然会出问题  1Exception in thread &quot;mai">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://raw.githubusercontent.com/wangyang377/blogImages/main/202402161953353.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/wangyang377/blogImages/main/202402161917975.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/wangyang377/blogImages/main/202402161923827.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/wangyang377/blogImages/main/202402161925905.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/wangyang377/blogImages/main/202402170736903.png">
+<meta property="article:published_time" content="2024-02-16T11:22:23.405Z">
+<meta property="article:modified_time" content="2024-02-17T00:49:02.852Z">
+<meta property="article:author" content="wangyang377">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://raw.githubusercontent.com/wangyang377/blogImages/main/202402161953353.png">
+  
+  
+  
+  
+
+  <!-- feed -->
+  
+
+  <link rel="stylesheet" href="/css/main.css?v=1.26.8">
+
+  
+
+  
+
+  
+  
+</head>
+<body>
+
+<div class="l_body content tech" id="start" layout="post" ><aside class="l_left"><div class="sidebar-container">
+
+
+<header class="header"><div class="logo-wrap"><a class="title" href="/"><div class="main" ff="title">wangyang377_blog</div></a></div></header>
+
+<div class="nav-area">
+<div class="search-wrapper" id="search-wrapper"><form class="search-form"><a class="search-button" onclick="document.getElementById(&quot;search-input&quot;).focus();"><svg t="1705074644177" viewBox="0 0 1025 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="1560" width="200" height="200"><path d="M1008.839137 935.96571L792.364903 719.491476a56.783488 56.783488 0 0 0-80.152866 0 358.53545 358.53545 0 1 1 100.857314-335.166073 362.840335 362.840335 0 0 1-3.689902 170.145468 51.248635 51.248635 0 1 0 99.217358 26.444296 462.057693 462.057693 0 1 0-158.255785 242.303546l185.930047 185.725053a51.248635 51.248635 0 0 0 72.568068 0 51.248635 51.248635 0 0 0 0-72.978056z" p-id="1561"></path><path d="M616.479587 615.969233a50.428657 50.428657 0 0 0-61.498362-5.534852 174.655348 174.655348 0 0 1-177.525271 3.484907 49.403684 49.403684 0 0 0-58.833433 6.76482l-3.074918 2.869923a49.403684 49.403684 0 0 0 8.609771 78.10292 277.767601 277.767601 0 0 0 286.992355-5.739847 49.403684 49.403684 0 0 0 8.404776-76.667958z" p-id="1562"></path></svg></a><input type="text" class="search-input" id="search-input" placeholder="站内搜索"></form><div id="search-result"></div><div class="search-no-result">没有找到内容！</div></div>
+
+
+<nav class="menu dis-select"></nav>
+</div>
+<div class="widgets">
+
+<widget class="widget-wrapper toc single" id="data-toc" collapse="false"><div class="widget-header dis-select"><span class="name">本文目录</span></div><div class="widget-body fs14"><div class="doc-tree active"><ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%90%90%E6%A7%BD"><span class="toc-text">吐槽</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%80%E3%80%81%E6%80%9D%E6%83%B3%E6%A6%82%E8%BF%B0-Map-Reduce"><span class="toc-text">一、思想概述: Map&amp;Reduce</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%8C%E3%80%81-%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB"><span class="toc-text">二、 架构体系</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%89%E3%80%81-%E7%BC%96%E7%A8%8B%E8%A7%84%E8%8C%83"><span class="toc-text">三、 编程规范</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%9B%9B-%E3%80%81-MapReduce%E5%B7%A5%E4%BD%9C%E6%89%A7%E8%A1%8C%E6%B5%81%E7%A8%8B"><span class="toc-text">四 、 MapReduce工作执行流程</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%94%E3%80%81%E6%95%B0%E6%8D%AE%E7%B1%BB%E5%9E%8B"><span class="toc-text">五、数据类型</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%AD%E3%80%81wordcount"><span class="toc-text">六、wordcount</span></a></li></ol></div></div></widget>
+
+
+
+
+
+
+
+<widget class="widget-wrapper post-list"><div class="widget-header dis-select"><span class="name">最近更新</span></div><div class="widget-body fs14"><a class="item title" href="/2024/02/17/Flink(3)%E2%80%94%E2%80%94%E7%8A%B6%E6%80%81/"><span class="title">Flink(3)——状态</span></a><a class="item title" href="/2024/02/17/Flink(2)%E2%80%94%E2%80%94%E6%97%B6%E9%97%B4%E4%B8%8E%E7%AA%97%E5%8F%A3/"><span class="title">Flink(2)——时间与窗口</span></a><a class="item title" href="/2024/02/17/Flink(1)%E2%80%94%E2%80%94%E5%85%A5%E9%97%A8%EF%BC%9Awordcount/"><span class="title">Flink(1)——入门：wordcount</span></a><a class="item title active" href="/2024/02/16/MapReduce%E2%80%94%E2%80%94countword/"><span class="title">MapReduce——countword</span><svg class="active-icon" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><path fill="currentColor" d="M21 11.098v4.993c0 3.096 0 4.645-.734 5.321c-.35.323-.792.526-1.263.58c-.987.113-2.14-.907-4.445-2.946c-1.02-.901-1.529-1.352-2.118-1.47a2.225 2.225 0 0 0-.88 0c-.59.118-1.099.569-2.118 1.47c-2.305 2.039-3.458 3.059-4.445 2.945a2.238 2.238 0 0 1-1.263-.579C3 20.736 3 19.188 3 16.091v-4.994C3 6.81 3 4.666 4.318 3.333C5.636 2 7.758 2 12 2c4.243 0 6.364 0 7.682 1.332C21 4.665 21 6.81 21 11.098" opacity=".5"/><path fill="currentColor" d="M9 5.25a.75.75 0 0 0 0 1.5h6a.75.75 0 0 0 0-1.5z"/></svg></a><a class="item title" href="/2024/02/17/MapReduce%E2%80%94%E2%80%94join/"><span class="title">MapReduce——join</span></a><a class="item title" href="/2024/02/16/%E4%BB%8E%E9%9B%B6%E5%BC%80%E5%A7%8B%E6%90%AD%E5%BB%BAhadoop%E9%9B%86%E7%BE%A4/"><span class="title">从零开始搭建hadoop集群</span></a><a class="item title" href="/2024/02/15/%E7%AE%80%E6%98%93%E5%8D%9A%E5%AE%A2%E6%90%AD%E5%BB%BA%EF%BC%9Ahexo+gitpages+picgo+typora/"><span class="title">简易博客搭建：hexo+gitpages+picgo+typora</span></a></div></widget>
+</div>
+
+</div></aside><div class="l_main" id="main">
+
+
+
+
+
+<div class="article banner top">
+  <div class="content">
+    
+<div class="top bread-nav footnote"><div class="left"><div class="flex-row" id="breadcrumb"><a class="cap breadcrumb" href="/">主页</a>
+<span class="sep"></span><a class="cap breadcrumb" href="/">文章</a><span class="sep"></span><a class="cap breadcrumb-link" href="/categories/%E5%A4%A7%E6%95%B0%E6%8D%AE/">大数据</a> <span class="sep"></span> <a class="cap breadcrumb-link" href="/categories/%E5%A4%A7%E6%95%B0%E6%8D%AE/MapReduce/">MapReduce</a></div>
+<div class="flex-row" id="post-meta"><span class="text created">发布于：<time datetime="2024-02-16T11:22:23.405Z">2024-02-16</time></span><span class="sep updated"></span><span class="text updated">更新于：<time datetime="2024-02-17T00:49:02.852Z">2024-02-17</time></span></div></div>
+</div>
+
+    
+    <div class="bottom">
+      <div class="text-area">
+        <h1 class="text title"><span>MapReduce——countword</span></h1>
+      </div>
+    </div>
+    
+  </div>
+  </div><article class="md-text content"><h2 id="吐槽"><a href="#吐槽" class="headerlink" title="吐槽"></a>吐槽</h2><p>代码一定得要自己写一遍，对于mapreduce，mentor安排的学习目标并不困难，了解思想学习原理，知道怎么编写mapreduce程序，能够实现一个join操作，但是真上手还是小坑不断，就说wordcount</p>
+<p>wordcount绝对算是简单的不能再简单了，不存在任何编程和理解上的难度，但是万万没想到，nativeio竟然会出问题</p>
+<p><img class="lazy" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAABGdBTUEAALGPC/xhBQAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAAaADAAQAAAABAAAAAQAAAADa6r/EAAAAC0lEQVQIHWNgAAIAAAUAAY27m/MAAAAASUVORK5CYII=" data-src="https://raw.githubusercontent.com/wangyang377/blogImages/main/202402161953353.png" alt="image-20240216195327191"></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Exception in thread &quot;main&quot; java.lang.UnsatisfiedLinkError: &#x27;org.apache.hadoop.io.nativeio.NativeIO$POSIX$Stat org.apache.hadoop.io.nativeio.NativeIO$POSIX.stat(java.lang.String)&#x27;</span><br></pre></td></tr></table></figure>
+
+<p>反复排查之后发现是windows下的input必须要通过通配符的形式表示，不能像linux一样用文件夹表示</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">FileInputFormat.addInputPath(job, <span class="keyword">new</span> <span class="title class_">Path</span>(<span class="string">&quot;D:\\bigdata\\Java_demo\\wordcount\\*.txt&quot;</span>));</span><br><span class="line"></span><br><span class="line"><span class="comment">//省略通配符则会报如上错误，令人抓狂</span></span><br><span class="line">FileInputFormat.addInputPath(job, <span class="keyword">new</span> <span class="title class_">Path</span>(<span class="string">&quot;D:\\bigdata\\Java_demo\\wordcount&quot;</span>));</span><br></pre></td></tr></table></figure>
+
+<p>查了很多博客，有说需要改版本依赖的，有说要改org.apache.hadoop.io.nativeio源码的，乱七八糟，最终通过通配符的方式解决，让人哭笑不得。</p>
+<p>按道理这个问题应该非常常见，每个初学者都会遇到，但是相关博客竟然寥寥无几，大家测试都不用本地的？</p>
+<p>正文如下</p>
+<h2 id="一、思想概述-Map-Reduce"><a href="#一、思想概述-Map-Reduce" class="headerlink" title="一、思想概述: Map&amp;Reduce"></a>一、思想概述: Map&amp;Reduce</h2><p>MapReduce思想在生活中处处可见，核心就是“先分再合，分而治之”</p>
+<p> 所谓“分而治之”就是把一个复杂的问题，按照一定的“分解”方法分为等价的规模较小的若干部分，然后逐个解决，分别找出各部分的结果，把各部分的结果组成整个问题的结果。</p>
+<p>这种思想来源于日常生活与工作时的经验，同样也完全适用于大量复杂的任务处理场景（大规模数据处理场景）</p>
+<p>一个简单的例子，10排队伍，每排一个队长负责清点本排队伍的人数，这就是map，这10个人会合把各排人数汇总到到一起就是reduce。</p>
+<p>Map负责“分”，即把复杂的任务分解为若干个“简单的任务”来并行处理。可以进行拆分的前提是这些小任务可以并行计算，彼此间几乎没有依赖关系。</p>
+<p>Reduce负责“合”，即对map阶段的结果进行全局汇总。</p>
+<p>这两个阶段合起来正是MapReduce</p>
+<p><img class="lazy" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAABGdBTUEAALGPC/xhBQAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAAaADAAQAAAABAAAAAQAAAADa6r/EAAAAC0lEQVQIHWNgAAIAAAUAAY27m/MAAAAASUVORK5CYII=" data-src="https://raw.githubusercontent.com/wangyang377/blogImages/main/202402161917975.png" alt="image-20240216191703890"></p>
+<h2 id="二、-架构体系"><a href="#二、-架构体系" class="headerlink" title="二、 架构体系"></a>二、 架构体系</h2><p>一个完整的mapreduce程序在分布式运行时有三类实例进程：</p>
+<ul>
+<li>MRAppMaster：负责整个程序的过程调度及状态协调</li>
+<li>MapTask：负责map阶段的整个数据处理流程</li>
+<li>ReduceTask：负责reduce阶段的整个数据处理流程</li>
+</ul>
+<p><img class="lazy" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAABGdBTUEAALGPC/xhBQAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAAaADAAQAAAABAAAAAQAAAADa6r/EAAAAC0lEQVQIHWNgAAIAAAUAAY27m/MAAAAASUVORK5CYII=" data-src="https://raw.githubusercontent.com/wangyang377/blogImages/main/202402161923827.png" alt="image-20240216192300785"></p>
+<h2 id="三、-编程规范"><a href="#三、-编程规范" class="headerlink" title="三、 编程规范"></a>三、 编程规范</h2><p>MapReduce分布式的运算程序需要分成2个阶段，分别是Map阶段和Reduce阶段。</p>
+<p>Map阶段对应的是MapTask并发实例，完全并行运行。Reduce阶段对应的是ReduceTask并发实例，数据依赖于上一个阶段所有MapTask并发实例的数据输出结果。</p>
+<p>MapReduce编程模型只能包含一个Map阶段和一个Reduce阶段，如果用户的业务逻辑非常复杂，那就只能多个MapReduce程序，串行运行。</p>
+<p>用户编写的程序分成三个部分：Mapper，Reducer，Driver(提交运行mr程序的客户端驱动)。</p>
+<p>用户自定义的Mapper和Reducer都要继承各自的父类。Mapper中的业务逻辑写在map()方法中，Reducer的业务逻辑写在reduce()方法中。整个程序需要一个Driver来进行提交，提交的是一个描述了各种必要信息的job对象。</p>
+<h2 id="四-、-MapReduce工作执行流程"><a href="#四-、-MapReduce工作执行流程" class="headerlink" title="四 、 MapReduce工作执行流程"></a>四 、 MapReduce工作执行流程</h2><p>整个MapReduce工作流程可以分为3个阶段：map、shuffle、reduce。</p>
+<p><img class="lazy" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAABGdBTUEAALGPC/xhBQAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAAaADAAQAAAABAAAAAQAAAADa6r/EAAAAC0lEQVQIHWNgAAIAAAUAAY27m/MAAAAASUVORK5CYII=" data-src="https://raw.githubusercontent.com/wangyang377/blogImages/main/202402161925905.png" alt="image-20240216192524848"></p>
+<ul>
+<li>map阶段：<br>负责把从数据源读取来到数据进行处理，默认情况下读取数据返回的是kv键值对类型，经过自定义map方法处理之后，输出的也应该是kv键值对类型。</li>
+<li>shuffle阶段：<br>map输出的数据会经过分区、排序、分组等自带动作进行重组，相当于洗牌的逆过程。这是MapReduce的核心所在，也是难点所在。<br>默认分区规则：key相同的分在同一个分区，同一个分区被同一个reduce处理。<br>默认排序规则：根据key字典序排序<br>默认分组规则：key相同的分为一组，一组调用reduce处理一次。</li>
+<li>reduce阶段：<br>负责针对shuffle好的数据进行聚合处理。输出的结果也应该是kv键值对。</li>
+</ul>
+<h2 id="五、数据类型"><a href="#五、数据类型" class="headerlink" title="五、数据类型"></a>五、数据类型</h2><p>hadoop的序列化没有采用java的序列化机制，而是实现了自己的序列化机制。</p>
+<p>hadoop提供了如下内容的数据类型，这些数据类型都实现了WritableComparable接口，以便用这些类型定义的数据可以被序列化进行网络传输和文件存储，以及进行大小比较。</p>
+<table>
+<thead>
+<tr>
+<th><strong>Hadoop</strong>  <strong>数据类型</strong></th>
+<th><strong>Java 数据类型</strong></th>
+<th><strong>备注</strong></th>
+</tr>
+</thead>
+<tbody><tr>
+<td>BooleanWritable</td>
+<td>boolean</td>
+<td>标准布尔型数值</td>
+</tr>
+<tr>
+<td>ByteWritable</td>
+<td>byte</td>
+<td>单字节数值</td>
+</tr>
+<tr>
+<td>IntWritable</td>
+<td>int</td>
+<td>整型数</td>
+</tr>
+<tr>
+<td>FloatWritable</td>
+<td>float</td>
+<td>浮点数</td>
+</tr>
+<tr>
+<td>LongWritable</td>
+<td>long</td>
+<td>长整型数</td>
+</tr>
+<tr>
+<td>DoubleWritable</td>
+<td>double</td>
+<td>双字节数值</td>
+</tr>
+<tr>
+<td>Text</td>
+<td>String</td>
+<td>使用UTF8格式存储的文本</td>
+</tr>
+<tr>
+<td>MapWritable</td>
+<td>map</td>
+<td>映射</td>
+</tr>
+<tr>
+<td>ArrayWritable</td>
+<td>array</td>
+<td>数组</td>
+</tr>
+<tr>
+<td>NullWritable</td>
+<td>null</td>
+<td>当&lt;key,value&gt;中的key或value为空时使用</td>
+</tr>
+</tbody></table>
+<h2 id="六、wordcount"><a href="#六、wordcount" class="headerlink" title="六、wordcount"></a>六、wordcount</h2><p>WordCount中文叫做单词统计、词频统计，指的是使用程序统计某文本文件中，每个单词出现的总次数。这个是大数据计算领域经典的入门案例</p>
+<p>代码与注释如下</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> org.example;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> java.io.IOException;</span><br><span class="line"><span class="keyword">import</span> java.util.StringTokenizer;</span><br><span class="line"><span class="keyword">import</span> org.apache.hadoop.conf.Configuration;</span><br><span class="line"><span class="keyword">import</span> org.apache.hadoop.fs.Path;</span><br><span class="line"><span class="keyword">import</span> org.apache.hadoop.io.IntWritable;</span><br><span class="line"><span class="keyword">import</span> org.apache.hadoop.io.Text;</span><br><span class="line"><span class="keyword">import</span> org.apache.hadoop.mapreduce.Job;</span><br><span class="line"><span class="keyword">import</span> org.apache.hadoop.mapreduce.Mapper;</span><br><span class="line"><span class="keyword">import</span> org.apache.hadoop.mapreduce.Reducer;</span><br><span class="line"><span class="keyword">import</span> org.apache.hadoop.mapreduce.lib.input.FileInputFormat;</span><br><span class="line"><span class="keyword">import</span> org.apache.hadoop.mapreduce.lib.input.TextInputFormat;</span><br><span class="line"><span class="keyword">import</span> org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;</span><br><span class="line"><span class="keyword">import</span> org.apache.http.util.Args;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">WordCount</span> &#123;</span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * Mapper泛型：</span></span><br><span class="line"><span class="comment">     * KEYIN：k1的类型，行偏移量</span></span><br><span class="line"><span class="comment">     * VALUEIN：v1的类型，一行的文本数据</span></span><br><span class="line"><span class="comment">     * KEYOUT：k2的类型，每个单词</span></span><br><span class="line"><span class="comment">     * VALUEOUT：v2的类型，固定值1</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">class</span> <span class="title class_">TokenizerMapper</span></span><br><span class="line">            <span class="keyword">extends</span> <span class="title class_">Mapper</span>&lt;Object, Text, Text, IntWritable&gt;&#123;</span><br><span class="line">        <span class="keyword">private</span> <span class="keyword">final</span> <span class="keyword">static</span> <span class="type">IntWritable</span> <span class="variable">one</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">IntWritable</span>(<span class="number">1</span>);</span><br><span class="line">        <span class="keyword">private</span> <span class="type">Text</span> <span class="variable">word</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">Text</span>();</span><br><span class="line"></span><br><span class="line">        <span class="comment">/**</span></span><br><span class="line"><span class="comment">         *</span></span><br><span class="line"><span class="comment">         * map方法将k1和v1转化成k2和v2</span></span><br><span class="line"><span class="comment">         * <span class="doctag">@param</span> key k1</span></span><br><span class="line"><span class="comment">         * <span class="doctag">@param</span> value v1</span></span><br><span class="line"><span class="comment">         * <span class="doctag">@param</span> context mapreduce上下文对象，是连接map和reduce之间的桥梁</span></span><br><span class="line"><span class="comment">         */</span></span><br><span class="line">        <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">map</span><span class="params">(Object key, Text value, Context context</span></span><br><span class="line"><span class="params">        )</span> <span class="keyword">throws</span> IOException, InterruptedException &#123;</span><br><span class="line">            <span class="comment">//拿到一行数据</span></span><br><span class="line">            <span class="comment">//StringTokenizer类：根据自定义字符为分界符进行拆分，并将结果进行封装提供对应方法进行遍历取值</span></span><br><span class="line">            <span class="comment">//java默认的分隔符是“空格”、“制表符(‘\t’)”、“换行符(‘\n’)”、“回车符(‘\r’)”</span></span><br><span class="line">            <span class="comment">//StringTokenizer默认的话，所有的分隔符都会同时起作用</span></span><br><span class="line">            <span class="comment">//也因此 hello,world 对StringTokenizer是一个字符，</span></span><br><span class="line">            <span class="comment">//StringTokenizer itr = new StringTokenizer(value.toString());</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line">            String[] itr = value.toString().split(<span class="string">&quot;,&quot;</span>);</span><br><span class="line">            <span class="keyword">for</span> (String s:itr) &#123;</span><br><span class="line">                word.set(s);</span><br><span class="line">                <span class="comment">//调用context.wirte()将k2和v2向后传</span></span><br><span class="line">                context.write(word, one);</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * Reducer四个泛型：</span></span><br><span class="line"><span class="comment">     * KEYIN：k2的类型，每个单词</span></span><br><span class="line"><span class="comment">     * VALUEIN：v2的类型，集合中泛型的类型</span></span><br><span class="line"><span class="comment">     * KEYOUT：k3的类型，每个单词</span></span><br><span class="line"><span class="comment">     * VALUEOUT：v3的类型，每个单词的数量</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">class</span> <span class="title class_">IntSumReducer</span></span><br><span class="line">            <span class="keyword">extends</span> <span class="title class_">Reducer</span>&lt;Text,IntWritable,Text,IntWritable&gt; &#123;</span><br><span class="line">        <span class="keyword">private</span> <span class="type">IntWritable</span> <span class="variable">result</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">IntWritable</span>();</span><br><span class="line"></span><br><span class="line">        <span class="comment">/**</span></span><br><span class="line"><span class="comment">         * reduce方法将k2 v2转化成k3和v3</span></span><br><span class="line"><span class="comment">         * <span class="doctag">@param</span> key k2</span></span><br><span class="line"><span class="comment">         * <span class="doctag">@param</span> values 集合</span></span><br><span class="line"><span class="comment">         * <span class="doctag">@param</span> context 上下文对象</span></span><br><span class="line"><span class="comment">         */</span></span><br><span class="line">        <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">reduce</span><span class="params">(Text key, Iterable&lt;IntWritable&gt; values,</span></span><br><span class="line"><span class="params">                           Context context</span></span><br><span class="line"><span class="params">        )</span> <span class="keyword">throws</span> IOException, InterruptedException &#123;</span><br><span class="line">            <span class="comment">//遍历集合，相加</span></span><br><span class="line">            <span class="type">int</span> <span class="variable">sum</span> <span class="operator">=</span> <span class="number">0</span>;</span><br><span class="line">            <span class="keyword">for</span> (IntWritable val : values) &#123;</span><br><span class="line">                sum += val.get();</span><br><span class="line">            &#125;</span><br><span class="line">            result.set(sum);</span><br><span class="line"></span><br><span class="line">            <span class="comment">//k3和v3写入上下文</span></span><br><span class="line">            context.write(key, result);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> Exception &#123;</span><br><span class="line">        <span class="comment">//创建任务对象</span></span><br><span class="line">        <span class="type">Configuration</span> <span class="variable">conf</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">Configuration</span>();</span><br><span class="line">        conf.set(<span class="string">&quot;mapreduce.framework.name&quot;</span>,<span class="string">&quot;local&quot;</span>);</span><br><span class="line">        <span class="type">Job</span> <span class="variable">job</span> <span class="operator">=</span> Job.getInstance(conf, <span class="string">&quot;word count&quot;</span>);</span><br><span class="line"></span><br><span class="line">        <span class="comment">//TextInputFormat读取的k1和v1是行偏移量和行数据</span></span><br><span class="line">        <span class="comment">//job.setInputFormatClass(TextInputFormat.class);</span></span><br><span class="line">        <span class="comment">//TextInputFormat.addInputPath(job,new Path(&quot;hdfs://node1:8020/input/wordcount&quot;));</span></span><br><span class="line"></span><br><span class="line">        job.setJarByClass(WordCount.class);</span><br><span class="line"></span><br><span class="line">        <span class="comment">//指定map阶段处理方法</span></span><br><span class="line">        job.setMapperClass(TokenizerMapper.class);</span><br><span class="line"></span><br><span class="line">        job.setCombinerClass(IntSumReducer.class);</span><br><span class="line">        job.setReducerClass(IntSumReducer.class);</span><br><span class="line">        job.setOutputKeyClass(Text.class);</span><br><span class="line">        job.setOutputValueClass(IntWritable.class);</span><br><span class="line"></span><br><span class="line">        <span class="comment">//指定输入输出路径</span></span><br><span class="line">        FileInputFormat.addInputPath(job, <span class="keyword">new</span> <span class="title class_">Path</span>(<span class="string">&quot;D:\\bigdata\\Java_demo\\wordcount\\*.txt&quot;</span>));</span><br><span class="line">        FileOutputFormat.setOutputPath(job, <span class="keyword">new</span> <span class="title class_">Path</span>(<span class="string">&quot;D:\\bigdata\\Java_demo\\wordcount_output&quot;</span>));</span><br><span class="line">        System.exit(job.waitForCompletion(<span class="literal">true</span>) ? <span class="number">0</span> : <span class="number">1</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>流程如下</p>
+<p><img class="lazy" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAABGdBTUEAALGPC/xhBQAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAAaADAAQAAAABAAAAAQAAAADa6r/EAAAAC0lEQVQIHWNgAAIAAAUAAY27m/MAAAAASUVORK5CYII=" data-src="https://raw.githubusercontent.com/wangyang377/blogImages/main/202402170736903.png" alt="image.png"></p>
+<p>第一阶段是把输入目录下文件按照一定的标准逐个进行逻辑切片，形成切片规划。默认情况下，Split size &#x3D; Block size。每一个切片由一个MapTask处理。（getSplits）</p>
+<p>第二阶段是对切片中的数据按照一定的规则解析成&lt;key,value&gt;对。默认规则是把每一行文本内容解析成键值对。key是每一行的起始位置(单位是字节)，value是本行的文本内容。（TextInputFormat）</p>
+<p>第三阶段是调用Mapper类中的map方法。上阶段中每解析出来的一个&lt;k,v&gt;，调用一次map方法。每次调用map方法会输出零个或多个键值对。</p>
+<p>第四阶段是按照一定的规则对第三阶段输出的键值对进行分区。默认是只有一个区。分区的数量就是Reducer任务运行的数量。默认只有一个Reducer任务。</p>
+<p>第五阶段是对每个分区中的键值对进行排序。首先，按照键进行排序，对于键相同的键值对，按照值进行排序。比如三个键值对&lt;2,2&gt;、&lt;1,3&gt;、&lt;2,1&gt;，键和值分别是整数。那么排序后的结果是&lt;1,3&gt;、&lt;2,1&gt;、&lt;2,2&gt;。如果有第六阶段，那么进入第六阶段；如果没有，直接输出到文件中。</p>
+<p>第六阶段是对数据进行局部聚合处理，也就是combiner处理。键相等的键值对会调用一次reduce方法。经过这一阶段，数据量会减少。本阶段默认是没有的。</p>
+
+<div class="article-footer fs14">
+    <section id="license">
+      <div class="header"><span>许可协议</span></div>
+      <div class="body"><p>本文采用 <a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">署名-非商业性使用-相同方式共享 4.0 国际</a> 许可协议，转载请注明出处。</p>
+</div>
+    </section>
+    </div>
+</article>
+<div class="related-wrap" id="read-next"><section class="body"><div class="item" id="prev"><div class="note">较新文章</div><a href="/2024/02/17/MapReduce%E2%80%94%E2%80%94join/">MapReduce——join</a></div><div class="item" id="next"><div class="note">较早文章</div><a href="/2024/02/16/%E4%BB%8E%E9%9B%B6%E5%BC%80%E5%A7%8B%E6%90%AD%E5%BB%BAhadoop%E9%9B%86%E7%BE%A4/">从零开始搭建hadoop集群</a></div></section></div>
+
+
+
+
+
+
+<footer class="page-footer footnote"><hr><div class="text"><p>本站由 <a href="/">wangyang377</a> 使用 <a target="_blank" rel="noopener" href="https://github.com/xaoxuu/hexo-theme-stellar/tree/1.26.8">Stellar 1.26.8</a> 主题创建。<br>本博客所有文章除特别声明外，均采用 <a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a> 许可协议，转载请注明出处。</p>
+</div></footer>
+<div class='float-panel mobile-only blur' style='display:none'>
+  <button type='button' class='sidebar-toggle mobile' onclick='sidebar.toggle()'>
+    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 11c0-3.771 0-5.657 1.172-6.828C4.343 3 6.229 3 10 3h4c3.771 0 5.657 0 6.828 1.172C22 5.343 22 7.229 22 11v2c0 3.771 0 5.657-1.172 6.828C19.657 21 17.771 21 14 21h-4c-3.771 0-5.657 0-6.828-1.172C2 18.657 2 16.771 2 13z"/><path id="sep" stroke-linecap="round" d="M5.5 10h6m-5 4h4m4.5 7V3"/></g></svg>
+  </button>
+</div>
+<div class="main-mask" onclick="sidebar.toggle()"></div></div></div><div class="scripts">
+<script type="text/javascript">
+  const stellar = {
+    // 懒加载 css https://github.com/filamentgroup/loadCSS
+    loadCSS: (href, before, media, attributes) => {
+      var doc = window.document;
+      var ss = doc.createElement("link");
+      var ref;
+      if (before) {
+        ref = before;
+      } else {
+        var refs = (doc.body || doc.getElementsByTagName("head")[0]).childNodes;
+        ref = refs[refs.length - 1];
+      }
+      var sheets = doc.styleSheets;
+      if (attributes) {
+        for (var attributeName in attributes) {
+          if (attributes.hasOwnProperty(attributeName)) {
+            ss.setAttribute(attributeName, attributes[attributeName]);
+          }
+        }
+      }
+      ss.rel = "stylesheet";
+      ss.href = href;
+      ss.media = "only x";
+      function ready(cb) {
+        if (doc.body) {
+          return cb();
+        }
+        setTimeout(function () {
+          ready(cb);
+        });
+      }
+      ready(function () {
+        ref.parentNode.insertBefore(ss, before ? ref : ref.nextSibling);
+      });
+      var onloadcssdefined = function (cb) {
+        var resolvedHref = ss.href;
+        var i = sheets.length;
+        while (i--) {
+          if (sheets[i].href === resolvedHref) {
+            return cb();
+          }
+        }
+        setTimeout(function () {
+          onloadcssdefined(cb);
+        });
+      };
+      function loadCB() {
+        if (ss.addEventListener) {
+          ss.removeEventListener("load", loadCB);
+        }
+        ss.media = media || "all";
+      }
+      if (ss.addEventListener) {
+        ss.addEventListener("load", loadCB);
+      }
+      ss.onloadcssdefined = onloadcssdefined;
+      onloadcssdefined(loadCB);
+      return ss;
+    },
+
+    // 从 butterfly 和 volantis 获得灵感
+    loadScript: (src, opt) => new Promise((resolve, reject) => {
+      var script = document.createElement('script');
+      if (src.startsWith('/')){
+        src = stellar.config.root + src.substring(1);
+      }
+      script.src = src;
+      if (opt) {
+        for (let key of Object.keys(opt)) {
+          script[key] = opt[key]
+        }
+      } else {
+        // 默认异步，如果需要同步，第二个参数传入 {} 即可
+        script.async = true
+      }
+      script.onerror = reject
+      script.onload = script.onreadystatechange = function() {
+        const loadState = this.readyState
+        if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+        script.onload = script.onreadystatechange = null
+        resolve()
+      }
+      document.head.appendChild(script)
+    }),
+
+    // https://github.com/jerryc127/hexo-theme-butterfly
+    jQuery: (fn) => {
+      if (typeof jQuery === 'undefined') {
+        stellar.loadScript(stellar.plugins.jQuery).then(fn)
+      } else {
+        fn()
+      }
+    }
+  };
+  stellar.version = '1.26.8';
+  stellar.github = 'https://github.com/xaoxuu/hexo-theme-stellar/tree/1.26.8';
+  stellar.config = {
+    date_suffix: {
+      just: '刚刚',
+      min: '分钟前',
+      hour: '小时前',
+      day: '天前',
+      month: '个月前',
+    },
+    root : '/',
+  };
+
+  // required plugins (only load if needs)
+  stellar.plugins = {
+    jQuery: 'https://cdn.bootcdn.net/ajax/libs/jquery/3.7.1/jquery.min.js'
+  };
+
+  if ('local_search') {
+    stellar.search = {};
+    stellar.search.service = 'local_search';
+    if (stellar.search.service == 'local_search') {
+      let service_obj = Object.assign({}, {"field":"all","path":"/search.json","content":true,"sort":"-date"});
+      stellar.search[stellar.search.service] = service_obj;
+    }
+  }
+
+  // stellar js
+  stellar.plugins.stellar = Object.assign({"sites":"/js/plugins/sites.js","friends":"/js/plugins/friends.js","ghinfo":"/js/plugins/ghinfo.js","timeline":"/js/plugins/timeline.js","linkcard":"/js/plugins/linkcard.js","fcircle":"/js/plugins/fcircle.js","weibo":"/js/plugins/weibo.js","memos":"/js/plugins/memos.js","marked":"/js/plugins/marked.js"});
+
+  stellar.plugins.marked = Object.assign("https://cdn.bootcdn.net/ajax/libs/marked/4.0.18/marked.min.js");
+  // optional plugins
+  if ('true' == 'true') {
+    stellar.plugins.lazyload = Object.assign({"enable":true,"js":"https://cdn.bootcdn.net/ajax/libs/vanilla-lazyload/17.8.4/lazyload.min.js","transition":"fade"});
+  }
+  if ('true' == 'true') {
+    stellar.plugins.swiper = Object.assign({"enable":true,"css":"https://unpkg.com/swiper@10.3/swiper-bundle.min.css","js":"https://unpkg.com/swiper@10.3/swiper-bundle.min.js"});
+  }
+  if ('' == 'true') {
+    stellar.plugins.scrollreveal = Object.assign({"enable":null,"js":"https://cdn.bootcdn.net/ajax/libs/scrollReveal.js/4.0.9/scrollreveal.min.js","distance":"16px","duration":800,"interval":100,"scale":1});
+  }
+  if ('true' == 'true') {
+    stellar.plugins.preload = Object.assign({"enable":true,"service":"flying_pages","flying_pages":"https://cdn.bootcdn.net/ajax/libs/flying-pages/2.1.2/flying-pages.min.js"});
+  }
+  if ('true' == 'true') {
+    stellar.plugins.fancybox = Object.assign({"enable":true,"js":"https://cdn.bootcdn.net/ajax/libs/fancyapps-ui/5.0.22/fancybox/fancybox.umd.min.js","css":"https://cdn.bootcdn.net/ajax/libs/fancyapps-ui/5.0.22/fancybox/fancybox.min.css","selector":null});
+  }
+  if ('false' == 'true') {
+    stellar.plugins.heti = Object.assign({"enable":false,"css":"https://unpkg.com/heti@0.9.2/umd/heti.min.css","js":"https://unpkg.com/heti@0.9.2/umd/heti-addon.min.js"});
+  }
+  if ('true' == 'true') {
+    stellar.plugins.copycode = Object.assign({"enable":true,"js":"/js/plugins/copycode.js","default_text":"Copy","success_text":"Copied","toast":"复制成功"});
+  }
+</script>
+
+<!-- required -->
+<script src="/js/main.js?v=1.26.8" async></script>
+
+<!-- optional -->
+
+
+
+
+
+
+<!-- inject -->
+
+</div></body></html>
