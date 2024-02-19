@@ -1,0 +1,328 @@
+
+<!DOCTYPE html><html lang="zh-CN">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="hexo-theme" content="https://github.com/xaoxuu/hexo-theme-stellar/tree/1.26.8" theme-name="Stellar" theme-version="1.26.8">
+  
+  <meta name="generator" content="Hexo 7.1.1">
+  <meta http-equiv='x-dns-prefetch-control' content='on' />
+  
+  <meta name="renderer" content="webkit">
+  <meta name="force-rendering" content="webkit">
+  <meta http-equiv="X-UA-Compatible" content="IE=Edge,chrome=1">
+  <meta name="HandheldFriendly" content="True" >
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="theme-color" content="#f8f8f8">
+  
+  <title>Flink(番外)———Chandy-Lamport分布式快照算法 - wangyang377_blog</title>
+
+  
+    <meta name="description" content="最近在看Flink的checkpoint，感觉一直没有理解到位，所以打算从checkpoint参考的Chandy-Lamport分布式快照算法开始，做一个梳理 主要参考了原论文和普林斯顿的分布式系统课程 https:&#x2F;&#x2F;lamport.azurewebsites.net&#x2F;pubs&#x2F;chandy.pdf https:&#x2F;&#x2F;www.cs.princeton.edu&#x2F;courses&#x2F;archive&#x2F;fal">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Flink(番外)———Chandy-Lamport分布式快照算法">
+<meta property="og:url" content="https://wangyang377.github.io/2024/02/19/Flink(%E7%95%AA%E5%A4%96)%E2%80%94%E2%80%94%E2%80%94Chandy-Lamport%E5%88%86%E5%B8%83%E5%BC%8F%E5%BF%AB%E7%85%A7%E7%AE%97%E6%B3%95/index.html">
+<meta property="og:site_name" content="wangyang377_blog">
+<meta property="og:description" content="最近在看Flink的checkpoint，感觉一直没有理解到位，所以打算从checkpoint参考的Chandy-Lamport分布式快照算法开始，做一个梳理 主要参考了原论文和普林斯顿的分布式系统课程 https:&#x2F;&#x2F;lamport.azurewebsites.net&#x2F;pubs&#x2F;chandy.pdf https:&#x2F;&#x2F;www.cs.princeton.edu&#x2F;courses&#x2F;archive&#x2F;fal">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://raw.githubusercontent.com/wangyang377/blogImages/main/202402191038321.webp">
+<meta property="og:image" content="https://raw.githubusercontent.com/wangyang377/blogImages/main/202402191040631.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/wangyang377/blogImages/main/202402191119590.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/wangyang377/blogImages/main/202402191120545.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/wangyang377/blogImages/main/202402191120318.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/wangyang377/blogImages/main/202402191121623.png">
+<meta property="article:published_time" content="2024-02-19T02:37:25.567Z">
+<meta property="article:modified_time" content="2024-02-19T12:08:42.730Z">
+<meta property="article:author" content="wangyang377">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://raw.githubusercontent.com/wangyang377/blogImages/main/202402191038321.webp">
+  
+  
+  
+  
+
+  <!-- feed -->
+  
+
+  <link rel="stylesheet" href="/css/main.css?v=1.26.8">
+
+  
+
+  
+
+  
+  
+</head>
+<body>
+
+<div class="l_body content tech" id="start" layout="post" ><aside class="l_left"><div class="sidebar-container">
+
+
+<header class="header"><div class="logo-wrap"><a class="title" href="/"><div class="main" ff="title">wangyang377_blog</div></a></div></header>
+
+<div class="nav-area">
+<div class="search-wrapper" id="search-wrapper"><form class="search-form"><a class="search-button" onclick="document.getElementById(&quot;search-input&quot;).focus();"><svg t="1705074644177" viewBox="0 0 1025 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="1560" width="200" height="200"><path d="M1008.839137 935.96571L792.364903 719.491476a56.783488 56.783488 0 0 0-80.152866 0 358.53545 358.53545 0 1 1 100.857314-335.166073 362.840335 362.840335 0 0 1-3.689902 170.145468 51.248635 51.248635 0 1 0 99.217358 26.444296 462.057693 462.057693 0 1 0-158.255785 242.303546l185.930047 185.725053a51.248635 51.248635 0 0 0 72.568068 0 51.248635 51.248635 0 0 0 0-72.978056z" p-id="1561"></path><path d="M616.479587 615.969233a50.428657 50.428657 0 0 0-61.498362-5.534852 174.655348 174.655348 0 0 1-177.525271 3.484907 49.403684 49.403684 0 0 0-58.833433 6.76482l-3.074918 2.869923a49.403684 49.403684 0 0 0 8.609771 78.10292 277.767601 277.767601 0 0 0 286.992355-5.739847 49.403684 49.403684 0 0 0 8.404776-76.667958z" p-id="1562"></path></svg></a><input type="text" class="search-input" id="search-input" placeholder="站内搜索"></form><div id="search-result"></div><div class="search-no-result">没有找到内容！</div></div>
+
+
+<nav class="menu dis-select"></nav>
+</div>
+<div class="widgets">
+
+<widget class="widget-wrapper toc single" id="data-toc" collapse="false"><div class="widget-header dis-select"><span class="name">本文目录</span></div><div class="widget-body fs14"><div class="doc-tree active"><ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BB%80%E4%B9%88%E6%98%AFDistributed-Snapshot"><span class="toc-text">什么是Distributed Snapshot</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#The-Chandy-Lamport-Algorithm"><span class="toc-text">The Chandy-Lamport Algorithm</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#Initiating-a-Snapshot"><span class="toc-text">Initiating a Snapshot</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Propagating-a-Snapshot"><span class="toc-text">Propagating a Snapshot</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Terminating-a-Snapshot"><span class="toc-text">Terminating a Snapshot</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Understanding-the-Algorithm"><span class="toc-text">Understanding the Algorithm</span></a></li></ol></div></div></widget>
+
+
+
+
+
+
+
+<widget class="widget-wrapper post-list"><div class="widget-header dis-select"><span class="name">最近更新</span></div><div class="widget-body fs14"><a class="item title" href="/2024/02/19/Flink(5)%E2%80%94%E2%80%94%E5%AE%B9%E9%94%99%E6%9C%BA%E5%88%B6%E3%80%90checkpoint&barrier%E3%80%91/"><span class="title">Flink(5)——容错机制【checkpoint&barrier】</span></a><a class="item title active" href="/2024/02/19/Flink(%E7%95%AA%E5%A4%96)%E2%80%94%E2%80%94%E2%80%94Chandy-Lamport%E5%88%86%E5%B8%83%E5%BC%8F%E5%BF%AB%E7%85%A7%E7%AE%97%E6%B3%95/"><span class="title">Flink(番外)———Chandy-Lamport分布式快照算法</span><svg class="active-icon" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><path fill="currentColor" d="M21 11.098v4.993c0 3.096 0 4.645-.734 5.321c-.35.323-.792.526-1.263.58c-.987.113-2.14-.907-4.445-2.946c-1.02-.901-1.529-1.352-2.118-1.47a2.225 2.225 0 0 0-.88 0c-.59.118-1.099.569-2.118 1.47c-2.305 2.039-3.458 3.059-4.445 2.945a2.238 2.238 0 0 1-1.263-.579C3 20.736 3 19.188 3 16.091v-4.994C3 6.81 3 4.666 4.318 3.333C5.636 2 7.758 2 12 2c4.243 0 6.364 0 7.682 1.332C21 4.665 21 6.81 21 11.098" opacity=".5"/><path fill="currentColor" d="M9 5.25a.75.75 0 0 0 0 1.5h6a.75.75 0 0 0 0-1.5z"/></svg></a><a class="item title" href="/2024/02/17/Flink(4)%E2%80%94%E2%80%94%E7%8A%B6%E6%80%81/"><span class="title">Flink(4)——状态</span></a><a class="item title" href="/2024/02/17/Flink(3)%E2%80%94%E2%80%94%E6%97%B6%E9%97%B4%E4%B8%8E%E7%AA%97%E5%8F%A3/"><span class="title">Flink(3)——时间与窗口</span></a><a class="item title" href="/2024/02/18/Flink(2)%E2%80%94%E2%80%94%E9%9B%86%E7%BE%A4%E9%83%A8%E7%BD%B2/"><span class="title">Flink(2)——集群部署</span></a><a class="item title" href="/2024/02/18/Spark(1)%E2%80%94%E2%80%94wordcount/"><span class="title">Spark(1)——wordcount</span></a><a class="item title" href="/2024/02/17/Flink(1)%E2%80%94%E2%80%94%E5%85%A5%E9%97%A8%EF%BC%9Awordcount/"><span class="title">Flink(1)——入门：wordcount</span></a><a class="item title" href="/2024/02/16/MapReduce%E2%80%94%E2%80%94countword/"><span class="title">MapReduce——countword</span></a><a class="item title" href="/2024/02/17/MapReduce%E2%80%94%E2%80%94join/"><span class="title">MapReduce——join</span></a><a class="item title" href="/2024/02/16/%E4%BB%8E%E9%9B%B6%E5%BC%80%E5%A7%8B%E6%90%AD%E5%BB%BAhadoop%E9%9B%86%E7%BE%A4/"><span class="title">从零开始搭建hadoop集群</span></a></div></widget>
+</div>
+
+</div></aside><div class="l_main" id="main">
+
+
+
+
+
+<div class="article banner top">
+  <div class="content">
+    
+<div class="top bread-nav footnote"><div class="left"><div class="flex-row" id="breadcrumb"><a class="cap breadcrumb" href="/">主页</a>
+<span class="sep"></span><a class="cap breadcrumb" href="/">文章</a><span class="sep"></span><a class="cap breadcrumb-link" href="/categories/%E5%A4%A7%E6%95%B0%E6%8D%AE/">大数据</a> <span class="sep"></span> <a class="cap breadcrumb-link" href="/categories/%E5%A4%A7%E6%95%B0%E6%8D%AE/Flink/">Flink</a></div>
+<div class="flex-row" id="post-meta"><span class="text created">发布于：<time datetime="2024-02-19T02:37:25.567Z">2024-02-19</time></span><span class="sep updated"></span><span class="text updated">更新于：<time datetime="2024-02-19T12:08:42.730Z">2024-02-19</time></span></div></div>
+</div>
+
+    
+    <div class="bottom">
+      <div class="text-area">
+        <h1 class="text title"><span>Flink(番外)———Chandy-Lamport分布式快照算法</span></h1>
+      </div>
+    </div>
+    
+  </div>
+  </div><article class="md-text content"><p>最近在看Flink的checkpoint，感觉一直没有理解到位，所以打算从checkpoint参考的Chandy-Lamport分布式快照算法开始，做一个梳理</p>
+<p>主要参考了原论文和普林斯顿的分布式系统课程</p>
+<p><a target="_blank" rel="noopener" href="https://lamport.azurewebsites.net/pubs/chandy.pdf">https://lamport.azurewebsites.net/pubs/chandy.pdf</a></p>
+<p><a target="_blank" rel="noopener" href="https://www.cs.princeton.edu/courses/archive/fall16/cos418/docs/P8-chandy-lamport.pdf">https://www.cs.princeton.edu/courses/archive/fall16/cos418/docs/P8-chandy-lamport.pdf</a></p>
+<h2 id="什么是Distributed-Snapshot"><a href="#什么是Distributed-Snapshot" class="headerlink" title="什么是Distributed Snapshot"></a>什么是Distributed Snapshot</h2><ul>
+<li>Each distributed application has a number of processes running on a number of physical servers</li>
+<li>These processes communicate with each other via channels </li>
+<li>A snapshot captures the local states of each process (e.g., program variables) along with<br>the state of each communication channel</li>
+</ul>
+<p>所谓分布式快照，实际上就是特定时间点记录下来的分布式系统的全局状态（global state）。</p>
+<p>分布式快照的主要用途有故障恢复（即检查点）、死锁检测、垃圾收集等。</p>
+<p>为了方便理解，我们仍然沿用原论文中的方法，将分布式系统抽象为一张有向图：顶点称为进程（process），边称为链路（channel）。下图就示出包含3个进程和4个链路的分布式系统。</p>
+<p><img class="lazy" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAABGdBTUEAALGPC/xhBQAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAAaADAAQAAAABAAAAAQAAAADa6r/EAAAAC0lEQVQIHWNgAAIAAAUAAY27m/MAAAAASUVORK5CYII=" data-src="https://raw.githubusercontent.com/wangyang377/blogImages/main/202402191038321.webp" alt="img"></p>
+<p>熟悉flink的同学肯定一下就联想到flink Dashboard给出的有向图</p>
+<p><img class="lazy" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAABGdBTUEAALGPC/xhBQAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAAaADAAQAAAABAAAAAQAAAADa6r/EAAAAC0lEQVQIHWNgAAIAAAUAAY27m/MAAAAASUVORK5CYII=" data-src="https://raw.githubusercontent.com/wangyang377/blogImages/main/202402191040631.png" alt="image-20240219104001575"></p>
+<p>算子operator是process，数据流data stream是channel</p>
+<p>我们还是回到论文给出的分布式系统</p>
+<p>全局状态就要包含所有进程的状态以及所有链路的状态。由于进程之间在通过链路不停地交换数据，所以以下动作都可能造成全局状态的改变：</p>
+<ul>
+<li>进程p收到或发出一条消息M；</li>
+<li>链路c承载了到达或离开进程p的一条消息M。</li>
+</ul>
+<p>论文中将使分布式系统状态发生变化的因素叫做事件（event），并给出了它的形式化定义，即e&#x3D;&lt;p, s, s’, M, c&gt;。p、M、c的定义上面已经提到了，而s和s’分别是进程p在事件e发生之前及发生之后的状态。</p>
+<p>可见，<strong>进程对自己的状态是有感知的，而链路本身只负责传递消息，它们的状态不容易记录。</strong></p>
+<p>并且我们无法让时间静止，各个进程的时钟也很有可能不同步，故不能在一瞬间同时捕获所有进程和链路的状态。所以必须要曲线救国，通过每个进程记录的与自己相关的状态合并出全局状态，这也是Chandy-Lamport算法的核心思想所在。</p>
+<h2 id="The-Chandy-Lamport-Algorithm"><a href="#The-Chandy-Lamport-Algorithm" class="headerlink" title="The Chandy-Lamport Algorithm"></a>The Chandy-Lamport Algorithm</h2><p>以下内容直接来自于<a target="_blank" rel="noopener" href="https://www.cs.princeton.edu/courses/archive/fall16/cos418/docs/P8-chandy-lamport.pdf">普林斯顿分布式系统的ppt</a></p>
+<p><img class="lazy" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAABGdBTUEAALGPC/xhBQAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAAaADAAQAAAABAAAAAQAAAADa6r/EAAAAC0lEQVQIHWNgAAIAAAUAAY27m/MAAAAASUVORK5CYII=" data-src="https://raw.githubusercontent.com/wangyang377/blogImages/main/202402191119590.png" alt="image-20240219111900543"></p>
+<p>算法要达到如下的终极目标：</p>
+<ol>
+<li>最终产生的快照必须保证一致性；</li>
+<li>快照过程不能影响系统正常运行，更不能stop the world。</li>
+</ol>
+<p>为了保证成功取得全局快照，Chandy-Lamport算法分为3个阶段，即初始化快照、扩散快照与完成快照，并且借助一种与正常消息不同的特殊消息作为标记，英文称为marker。</p>
+<h3 id="Initiating-a-Snapshot"><a href="#Initiating-a-Snapshot" class="headerlink" title="Initiating a Snapshot"></a>Initiating a Snapshot</h3><p><img class="lazy" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAABGdBTUEAALGPC/xhBQAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAAaADAAQAAAABAAAAAQAAAADa6r/EAAAAC0lEQVQIHWNgAAIAAAUAAY27m/MAAAAASUVORK5CYII=" data-src="https://raw.githubusercontent.com/wangyang377/blogImages/main/202402191120545.png" alt="image-20240219112022511"></p>
+<h3 id="Propagating-a-Snapshot"><a href="#Propagating-a-Snapshot" class="headerlink" title="Propagating a Snapshot"></a>Propagating a Snapshot</h3><p><img class="lazy" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAABGdBTUEAALGPC/xhBQAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAAaADAAQAAAABAAAAAQAAAADa6r/EAAAAC0lEQVQIHWNgAAIAAAUAAY27m/MAAAAASUVORK5CYII=" data-src="https://raw.githubusercontent.com/wangyang377/blogImages/main/202402191120318.png"></p>
+<h3 id="Terminating-a-Snapshot"><a href="#Terminating-a-Snapshot" class="headerlink" title="Terminating a Snapshot"></a>Terminating a Snapshot</h3><p><img class="lazy" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAABGdBTUEAALGPC/xhBQAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAAaADAAQAAAABAAAAAQAAAADa6r/EAAAAC0lEQVQIHWNgAAIAAAUAAY27m/MAAAAASUVORK5CYII=" data-src="https://raw.githubusercontent.com/wangyang377/blogImages/main/202402191121623.png" alt="image-20240219112100592"></p>
+<h2 id="Understanding-the-Algorithm"><a href="#Understanding-the-Algorithm" class="headerlink" title="Understanding the Algorithm"></a>Understanding the Algorithm</h2><p>全局快照的难点在于，因为系统不能停止，每个进程向下游发送的消息是源源不断的，所以必须得有个东西来划分“当前的消息”与“将来的消息”，让它们不会混淆，而marker消息就是这个界限。对进程pj的入边链路ckj而言，如果收到的消息序列是[a, b, c, marker, d, e, f]，那么就说明a&#x2F;b&#x2F;c三条消息属于当前快照，而d&#x2F;e&#x2F;f三条消息属于下一个快照。</p>
+
+<div class="article-footer fs14">
+    <section id="license">
+      <div class="header"><span>许可协议</span></div>
+      <div class="body"><p>本文采用 <a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">署名-非商业性使用-相同方式共享 4.0 国际</a> 许可协议，转载请注明出处。</p>
+</div>
+    </section>
+    </div>
+</article>
+<div class="related-wrap" id="read-next"><section class="body"><div class="item" id="prev"><div class="note">较新文章</div><a href="/2024/02/19/Flink(5)%E2%80%94%E2%80%94%E5%AE%B9%E9%94%99%E6%9C%BA%E5%88%B6%E3%80%90checkpoint&barrier%E3%80%91/">Flink(5)——容错机制【checkpoint&barrier】</a></div><div class="item" id="next"><div class="note">较早文章</div><a href="/2024/02/18/Flink(2)%E2%80%94%E2%80%94%E9%9B%86%E7%BE%A4%E9%83%A8%E7%BD%B2/">Flink(2)——集群部署</a></div></section></div>
+
+
+
+
+
+
+<footer class="page-footer footnote"><hr><div class="text"><p>本站由 <a href="/">wangyang377</a> 使用 <a target="_blank" rel="noopener" href="https://github.com/xaoxuu/hexo-theme-stellar/tree/1.26.8">Stellar 1.26.8</a> 主题创建。<br>本博客所有文章除特别声明外，均采用 <a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a> 许可协议，转载请注明出处。</p>
+</div></footer>
+<div class='float-panel mobile-only blur' style='display:none'>
+  <button type='button' class='sidebar-toggle mobile' onclick='sidebar.toggle()'>
+    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 11c0-3.771 0-5.657 1.172-6.828C4.343 3 6.229 3 10 3h4c3.771 0 5.657 0 6.828 1.172C22 5.343 22 7.229 22 11v2c0 3.771 0 5.657-1.172 6.828C19.657 21 17.771 21 14 21h-4c-3.771 0-5.657 0-6.828-1.172C2 18.657 2 16.771 2 13z"/><path id="sep" stroke-linecap="round" d="M5.5 10h6m-5 4h4m4.5 7V3"/></g></svg>
+  </button>
+</div>
+<div class="main-mask" onclick="sidebar.toggle()"></div></div></div><div class="scripts">
+<script type="text/javascript">
+  const stellar = {
+    // 懒加载 css https://github.com/filamentgroup/loadCSS
+    loadCSS: (href, before, media, attributes) => {
+      var doc = window.document;
+      var ss = doc.createElement("link");
+      var ref;
+      if (before) {
+        ref = before;
+      } else {
+        var refs = (doc.body || doc.getElementsByTagName("head")[0]).childNodes;
+        ref = refs[refs.length - 1];
+      }
+      var sheets = doc.styleSheets;
+      if (attributes) {
+        for (var attributeName in attributes) {
+          if (attributes.hasOwnProperty(attributeName)) {
+            ss.setAttribute(attributeName, attributes[attributeName]);
+          }
+        }
+      }
+      ss.rel = "stylesheet";
+      ss.href = href;
+      ss.media = "only x";
+      function ready(cb) {
+        if (doc.body) {
+          return cb();
+        }
+        setTimeout(function () {
+          ready(cb);
+        });
+      }
+      ready(function () {
+        ref.parentNode.insertBefore(ss, before ? ref : ref.nextSibling);
+      });
+      var onloadcssdefined = function (cb) {
+        var resolvedHref = ss.href;
+        var i = sheets.length;
+        while (i--) {
+          if (sheets[i].href === resolvedHref) {
+            return cb();
+          }
+        }
+        setTimeout(function () {
+          onloadcssdefined(cb);
+        });
+      };
+      function loadCB() {
+        if (ss.addEventListener) {
+          ss.removeEventListener("load", loadCB);
+        }
+        ss.media = media || "all";
+      }
+      if (ss.addEventListener) {
+        ss.addEventListener("load", loadCB);
+      }
+      ss.onloadcssdefined = onloadcssdefined;
+      onloadcssdefined(loadCB);
+      return ss;
+    },
+
+    // 从 butterfly 和 volantis 获得灵感
+    loadScript: (src, opt) => new Promise((resolve, reject) => {
+      var script = document.createElement('script');
+      if (src.startsWith('/')){
+        src = stellar.config.root + src.substring(1);
+      }
+      script.src = src;
+      if (opt) {
+        for (let key of Object.keys(opt)) {
+          script[key] = opt[key]
+        }
+      } else {
+        // 默认异步，如果需要同步，第二个参数传入 {} 即可
+        script.async = true
+      }
+      script.onerror = reject
+      script.onload = script.onreadystatechange = function() {
+        const loadState = this.readyState
+        if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+        script.onload = script.onreadystatechange = null
+        resolve()
+      }
+      document.head.appendChild(script)
+    }),
+
+    // https://github.com/jerryc127/hexo-theme-butterfly
+    jQuery: (fn) => {
+      if (typeof jQuery === 'undefined') {
+        stellar.loadScript(stellar.plugins.jQuery).then(fn)
+      } else {
+        fn()
+      }
+    }
+  };
+  stellar.version = '1.26.8';
+  stellar.github = 'https://github.com/xaoxuu/hexo-theme-stellar/tree/1.26.8';
+  stellar.config = {
+    date_suffix: {
+      just: '刚刚',
+      min: '分钟前',
+      hour: '小时前',
+      day: '天前',
+      month: '个月前',
+    },
+    root : '/',
+  };
+
+  // required plugins (only load if needs)
+  stellar.plugins = {
+    jQuery: 'https://cdn.bootcdn.net/ajax/libs/jquery/3.7.1/jquery.min.js'
+  };
+
+  if ('local_search') {
+    stellar.search = {};
+    stellar.search.service = 'local_search';
+    if (stellar.search.service == 'local_search') {
+      let service_obj = Object.assign({}, {"field":"all","path":"/search.json","content":true,"sort":"-date"});
+      stellar.search[stellar.search.service] = service_obj;
+    }
+  }
+
+  // stellar js
+  stellar.plugins.stellar = Object.assign({"sites":"/js/plugins/sites.js","friends":"/js/plugins/friends.js","ghinfo":"/js/plugins/ghinfo.js","timeline":"/js/plugins/timeline.js","linkcard":"/js/plugins/linkcard.js","fcircle":"/js/plugins/fcircle.js","weibo":"/js/plugins/weibo.js","memos":"/js/plugins/memos.js","marked":"/js/plugins/marked.js"});
+
+  stellar.plugins.marked = Object.assign("https://cdn.bootcdn.net/ajax/libs/marked/4.0.18/marked.min.js");
+  // optional plugins
+  if ('true' == 'true') {
+    stellar.plugins.lazyload = Object.assign({"enable":true,"js":"https://cdn.bootcdn.net/ajax/libs/vanilla-lazyload/17.8.4/lazyload.min.js","transition":"fade"});
+  }
+  if ('true' == 'true') {
+    stellar.plugins.swiper = Object.assign({"enable":true,"css":"https://unpkg.com/swiper@10.3/swiper-bundle.min.css","js":"https://unpkg.com/swiper@10.3/swiper-bundle.min.js"});
+  }
+  if ('' == 'true') {
+    stellar.plugins.scrollreveal = Object.assign({"enable":null,"js":"https://cdn.bootcdn.net/ajax/libs/scrollReveal.js/4.0.9/scrollreveal.min.js","distance":"16px","duration":800,"interval":100,"scale":1});
+  }
+  if ('true' == 'true') {
+    stellar.plugins.preload = Object.assign({"enable":true,"service":"flying_pages","flying_pages":"https://cdn.bootcdn.net/ajax/libs/flying-pages/2.1.2/flying-pages.min.js"});
+  }
+  if ('true' == 'true') {
+    stellar.plugins.fancybox = Object.assign({"enable":true,"js":"https://cdn.bootcdn.net/ajax/libs/fancyapps-ui/5.0.22/fancybox/fancybox.umd.min.js","css":"https://cdn.bootcdn.net/ajax/libs/fancyapps-ui/5.0.22/fancybox/fancybox.min.css","selector":null});
+  }
+  if ('false' == 'true') {
+    stellar.plugins.heti = Object.assign({"enable":false,"css":"https://unpkg.com/heti@0.9.2/umd/heti.min.css","js":"https://unpkg.com/heti@0.9.2/umd/heti-addon.min.js"});
+  }
+  if ('true' == 'true') {
+    stellar.plugins.copycode = Object.assign({"enable":true,"js":"/js/plugins/copycode.js","default_text":"Copy","success_text":"Copied","toast":"复制成功"});
+  }
+</script>
+
+<!-- required -->
+<script src="/js/main.js?v=1.26.8" async></script>
+
+<!-- optional -->
+
+
+
+
+
+
+<!-- inject -->
+
+</div></body></html>

@@ -1,0 +1,350 @@
+
+<!DOCTYPE html><html lang="zh-CN">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="hexo-theme" content="https://github.com/xaoxuu/hexo-theme-stellar/tree/1.26.8" theme-name="Stellar" theme-version="1.26.8">
+  
+  <meta name="generator" content="Hexo 7.1.1">
+  <meta http-equiv='x-dns-prefetch-control' content='on' />
+  
+  <meta name="renderer" content="webkit">
+  <meta name="force-rendering" content="webkit">
+  <meta http-equiv="X-UA-Compatible" content="IE=Edge,chrome=1">
+  <meta name="HandheldFriendly" content="True" >
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="theme-color" content="#f8f8f8">
+  
+  <title>Flink(5)——容错机制【checkpoint&barrier】 - wangyang377_blog</title>
+
+  
+    <meta name="description" content="Flink保存checkpoint的过程依赖于Chandy-Lamport算法的变种——异步屏障快照（asynchronous barrier snapshotting, ABS）算法 Chandy-Lamport算法之前已经介绍过，结合flink有如下小结  Flink作业的快照要包含两部分，即算子所处的状态以及数据流承载的数据。算子每收到&#x2F;发出一条数据，以及数据流每流入&#x2F;流">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Flink(5)——容错机制【checkpoint&amp;barrier】">
+<meta property="og:url" content="https://wangyang377.github.io/2024/02/19/Flink(5)%E2%80%94%E2%80%94%E5%AE%B9%E9%94%99%E6%9C%BA%E5%88%B6%E3%80%90checkpoint&barrier%E3%80%91/index.html">
+<meta property="og:site_name" content="wangyang377_blog">
+<meta property="og:description" content="Flink保存checkpoint的过程依赖于Chandy-Lamport算法的变种——异步屏障快照（asynchronous barrier snapshotting, ABS）算法 Chandy-Lamport算法之前已经介绍过，结合flink有如下小结  Flink作业的快照要包含两部分，即算子所处的状态以及数据流承载的数据。算子每收到&#x2F;发出一条数据，以及数据流每流入&#x2F;流">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://raw.githubusercontent.com/wangyang377/blogImages/main/202402191409969.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/wangyang377/blogImages/main/202402191410028.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/wangyang377/blogImages/main/202402191514523.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/wangyang377/blogImages/main/202402191525986.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/wangyang377/blogImages/main/202402191542375.png">
+<meta property="article:published_time" content="2024-02-19T12:09:23.513Z">
+<meta property="article:modified_time" content="2024-02-19T12:59:31.025Z">
+<meta property="article:author" content="wangyang377">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://raw.githubusercontent.com/wangyang377/blogImages/main/202402191409969.png">
+  
+  
+  
+  
+
+  <!-- feed -->
+  
+
+  <link rel="stylesheet" href="/css/main.css?v=1.26.8">
+
+  
+
+  
+
+  
+  
+</head>
+<body>
+
+<div class="l_body content tech" id="start" layout="post" ><aside class="l_left"><div class="sidebar-container">
+
+
+<header class="header"><div class="logo-wrap"><a class="title" href="/"><div class="main" ff="title">wangyang377_blog</div></a></div></header>
+
+<div class="nav-area">
+<div class="search-wrapper" id="search-wrapper"><form class="search-form"><a class="search-button" onclick="document.getElementById(&quot;search-input&quot;).focus();"><svg t="1705074644177" viewBox="0 0 1025 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="1560" width="200" height="200"><path d="M1008.839137 935.96571L792.364903 719.491476a56.783488 56.783488 0 0 0-80.152866 0 358.53545 358.53545 0 1 1 100.857314-335.166073 362.840335 362.840335 0 0 1-3.689902 170.145468 51.248635 51.248635 0 1 0 99.217358 26.444296 462.057693 462.057693 0 1 0-158.255785 242.303546l185.930047 185.725053a51.248635 51.248635 0 0 0 72.568068 0 51.248635 51.248635 0 0 0 0-72.978056z" p-id="1561"></path><path d="M616.479587 615.969233a50.428657 50.428657 0 0 0-61.498362-5.534852 174.655348 174.655348 0 0 1-177.525271 3.484907 49.403684 49.403684 0 0 0-58.833433 6.76482l-3.074918 2.869923a49.403684 49.403684 0 0 0 8.609771 78.10292 277.767601 277.767601 0 0 0 286.992355-5.739847 49.403684 49.403684 0 0 0 8.404776-76.667958z" p-id="1562"></path></svg></a><input type="text" class="search-input" id="search-input" placeholder="站内搜索"></form><div id="search-result"></div><div class="search-no-result">没有找到内容！</div></div>
+
+
+<nav class="menu dis-select"></nav>
+</div>
+<div class="widgets">
+
+<widget class="widget-wrapper toc single" id="data-toc" collapse="false"><div class="widget-header dis-select"><span class="name">本文目录</span></div><div class="widget-body fs14"><div class="doc-tree active"><ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BB%80%E4%B9%88%E6%98%AFcheckpoint"><span class="toc-text">什么是checkpoint</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#checkpointing%E6%B5%81%E7%A8%8B"><span class="toc-text">checkpointing流程</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#barrier"><span class="toc-text">barrier</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#barrier%E5%AF%B9%E9%BD%90"><span class="toc-text">barrier对齐</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%BC%82%E6%AD%A5"><span class="toc-text">异步</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E9%97%AE%E9%A2%98"><span class="toc-text">问题</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%88%86%E6%9E%90"><span class="toc-text">分析</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#unaligened-checkpointing"><span class="toc-text">unaligened checkpointing</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E9%97%AE%E9%A2%98-1"><span class="toc-text">问题</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8F%82%E8%80%83"><span class="toc-text">参考</span></a></li></ol></div></div></widget>
+
+
+
+
+
+
+
+<widget class="widget-wrapper post-list"><div class="widget-header dis-select"><span class="name">最近更新</span></div><div class="widget-body fs14"><a class="item title active" href="/2024/02/19/Flink(5)%E2%80%94%E2%80%94%E5%AE%B9%E9%94%99%E6%9C%BA%E5%88%B6%E3%80%90checkpoint&barrier%E3%80%91/"><span class="title">Flink(5)——容错机制【checkpoint&barrier】</span><svg class="active-icon" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><path fill="currentColor" d="M21 11.098v4.993c0 3.096 0 4.645-.734 5.321c-.35.323-.792.526-1.263.58c-.987.113-2.14-.907-4.445-2.946c-1.02-.901-1.529-1.352-2.118-1.47a2.225 2.225 0 0 0-.88 0c-.59.118-1.099.569-2.118 1.47c-2.305 2.039-3.458 3.059-4.445 2.945a2.238 2.238 0 0 1-1.263-.579C3 20.736 3 19.188 3 16.091v-4.994C3 6.81 3 4.666 4.318 3.333C5.636 2 7.758 2 12 2c4.243 0 6.364 0 7.682 1.332C21 4.665 21 6.81 21 11.098" opacity=".5"/><path fill="currentColor" d="M9 5.25a.75.75 0 0 0 0 1.5h6a.75.75 0 0 0 0-1.5z"/></svg></a><a class="item title" href="/2024/02/19/Flink(%E7%95%AA%E5%A4%96)%E2%80%94%E2%80%94%E2%80%94Chandy-Lamport%E5%88%86%E5%B8%83%E5%BC%8F%E5%BF%AB%E7%85%A7%E7%AE%97%E6%B3%95/"><span class="title">Flink(番外)———Chandy-Lamport分布式快照算法</span></a><a class="item title" href="/2024/02/17/Flink(4)%E2%80%94%E2%80%94%E7%8A%B6%E6%80%81/"><span class="title">Flink(4)——状态</span></a><a class="item title" href="/2024/02/17/Flink(3)%E2%80%94%E2%80%94%E6%97%B6%E9%97%B4%E4%B8%8E%E7%AA%97%E5%8F%A3/"><span class="title">Flink(3)——时间与窗口</span></a><a class="item title" href="/2024/02/18/Flink(2)%E2%80%94%E2%80%94%E9%9B%86%E7%BE%A4%E9%83%A8%E7%BD%B2/"><span class="title">Flink(2)——集群部署</span></a><a class="item title" href="/2024/02/18/Spark(1)%E2%80%94%E2%80%94wordcount/"><span class="title">Spark(1)——wordcount</span></a><a class="item title" href="/2024/02/17/Flink(1)%E2%80%94%E2%80%94%E5%85%A5%E9%97%A8%EF%BC%9Awordcount/"><span class="title">Flink(1)——入门：wordcount</span></a><a class="item title" href="/2024/02/16/MapReduce%E2%80%94%E2%80%94countword/"><span class="title">MapReduce——countword</span></a><a class="item title" href="/2024/02/17/MapReduce%E2%80%94%E2%80%94join/"><span class="title">MapReduce——join</span></a><a class="item title" href="/2024/02/16/%E4%BB%8E%E9%9B%B6%E5%BC%80%E5%A7%8B%E6%90%AD%E5%BB%BAhadoop%E9%9B%86%E7%BE%A4/"><span class="title">从零开始搭建hadoop集群</span></a></div></widget>
+</div>
+
+</div></aside><div class="l_main" id="main">
+
+
+
+
+
+<div class="article banner top">
+  <div class="content">
+    
+<div class="top bread-nav footnote"><div class="left"><div class="flex-row" id="breadcrumb"><a class="cap breadcrumb" href="/">主页</a>
+<span class="sep"></span><a class="cap breadcrumb" href="/">文章</a><span class="sep"></span><a class="cap breadcrumb-link" href="/categories/%E5%A4%A7%E6%95%B0%E6%8D%AE/">大数据</a> <span class="sep"></span> <a class="cap breadcrumb-link" href="/categories/%E5%A4%A7%E6%95%B0%E6%8D%AE/Flink/">Flink</a></div>
+<div class="flex-row" id="post-meta"><span class="text created">发布于：<time datetime="2024-02-19T12:09:23.513Z">2024-02-19</time></span><span class="sep updated"></span><span class="text updated">更新于：<time datetime="2024-02-19T12:59:31.025Z">2024-02-19</time></span></div></div>
+</div>
+
+    
+    <div class="bottom">
+      <div class="text-area">
+        <h1 class="text title"><span>Flink(5)——容错机制【checkpoint&barrier】</span></h1>
+      </div>
+    </div>
+    
+  </div>
+  </div><article class="md-text content"><p>Flink保存checkpoint的过程依赖于Chandy-Lamport算法的变种——<strong>异步屏障快照（asynchronous barrier snapshotting, ABS）算法</strong></p>
+<p>Chandy-Lamport算法之前已经介绍过，结合flink有如下小结</p>
+<ul>
+<li>Flink作业的快照要包含两部分，即算子所处的状态以及数据流承载的数据。算子每收到&#x2F;发出一条数据，以及数据流每流入&#x2F;流出一条数据，都会造成全局状态的改变。</li>
+<li>算子可以感知到自己的状态，但数据流的状态不容易记录，主要是因为承载的数据量太大，并且总是在变化。</li>
+<li>时间是无法静止的（即数据总是在流动的），并且快照不能stop-the-world，否则会造成延迟和数据堆积，降低吞吐量。</li>
+</ul>
+<h2 id="什么是checkpoint"><a href="#什么是checkpoint" class="headerlink" title="什么是checkpoint"></a>什么是checkpoint</h2><p>其实就是所有任务的状态在某个时间点的一份快照。出错时从这份快照中恢复状态即可。</p>
+<p>当然这带来一个问题，因为是流数据，在发现出错到恢复的这段时间，数据也一样在流入，那数据丢失怎么办？答：offset。现在Flink的数据源一般是Kafka等消息队列，它们一般对于数据都会记录其偏移量offset，出错时只需要根据这个offset重放数据即可，所以Flink中的CheckPoints只需要保存状态即可。</p>
+<p><img class="lazy" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAABGdBTUEAALGPC/xhBQAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAAaADAAQAAAABAAAAAQAAAADa6r/EAAAAC0lEQVQIHWNgAAIAAAUAAY27m/MAAAAASUVORK5CYII=" data-src="https://raw.githubusercontent.com/wangyang377/blogImages/main/202402191409969.png" alt="image-20240219140920869"></p>
+<h2 id="checkpointing流程"><a href="#checkpointing流程" class="headerlink" title="checkpointing流程"></a>checkpointing流程</h2><p>前面已经介绍过，数据总是在流动的，并且快照不能stop-the-world，否则会造成延迟和数据堆积，降低吞吐量。所以checkpoint的保存需要引入barrier（屏障），并且需要异步保存</p>
+<h3 id="barrier"><a href="#barrier" class="headerlink" title="barrier"></a>barrier</h3><p>barrier就是chandy-lamport算法时介绍的marker。</p>
+<p>收到保存检查点的指令后，Source任务可以在当前数据流中插入这个结构；之后的所有任务只要遇到它就开始对状态做持久化快照保存。由于数据流是保持顺序依次处理的，因此遇到这个标识就代表之前的数据都处理完了，可以保存一个快照到checkpoint storage中；而在它之后的数据，引起的状态改变就不会体现在这个checkpoint中，而需要保存到下一个checkpoint。</p>
+<p>最后恢复时会从最新一个成功保存的checkpoint恢复，保存成功的标志就是所有operator都就同一个checkpoint ID返回ack。</p>
+<h3 id="barrier对齐"><a href="#barrier对齐" class="headerlink" title="barrier对齐"></a>barrier对齐</h3><p>面对多条数据流时，为了实现exactly once，相同checkpoint ID的barrier会有一个对齐操作，如果不对齐，就只能实现at least once</p>
+<p>核心原则如下</p>
+<ul>
+<li>当上游任务向多个并行下游任务发送barrier时，需要广播出去；</li>
+<li>而当多个上游任务向同一个下游任务传递分界线时，需要在下游任务执行“分界线对齐”操作，也就是需要等到所有并行分区的barrier都到齐，才可以开始状态的保存。</li>
+</ul>
+<p>以wordcount为例，想象两条数据流进入一个operator算子进行wordcount，第一条数据流barrier来得早，第二条来得慢，如果有对齐，那么第一条数据流barrier之后的数据会在缓冲区等待，不进行count，等到第二个barrier到来之后，算子状态快照之后，才开始处理缓冲区的数据</p>
+<p>如果没有对齐，那第一条数据流里的数据在barrier到达之后不会停留在缓冲区，而是会直接进行count，等到第二个barrier到来，算子状态快照，后期恢复时部分数据会count两次，也就是 at least once</p>
+<p>官方给出的示例图如下：</p>
+<p><img class="lazy" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAABGdBTUEAALGPC/xhBQAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAAaADAAQAAAABAAAAAQAAAADa6r/EAAAAC0lEQVQIHWNgAAIAAAUAAY27m/MAAAAASUVORK5CYII=" data-src="https://raw.githubusercontent.com/wangyang377/blogImages/main/202402191410028.png" alt="image-20240219141025988"></p>
+<p><img class="lazy" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAABGdBTUEAALGPC/xhBQAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAAaADAAQAAAABAAAAAQAAAADa6r/EAAAAC0lEQVQIHWNgAAIAAAUAAY27m/MAAAAASUVORK5CYII=" data-src="https://raw.githubusercontent.com/wangyang377/blogImages/main/202402191514523.png" alt="image-20240219151459444"></p>
+<h3 id="异步"><a href="#异步" class="headerlink" title="异步"></a>异步</h3><p>快照和屏障都已经说了，最后聊一聊异步。</p>
+<p>异步实际上指的是快照数据写入的异步性：算子收齐屏障并触发快照之后，不会等待快照数据全部写入状态后端，而是一边后台写入，一边立刻继续处理数据流，并将屏障发送到下游，实现了最小化延迟。</p>
+<p>所以引入异步性之后，checkpoint成功的条件除了所有Sink都报告ack之外，还得加上一条：所有有状态的算子都报告ack，否则JobManager就无法确认异步写入到底完成没有。</p>
+<h3 id="问题"><a href="#问题" class="headerlink" title="问题"></a>问题</h3><p> Flink 的 Aligned Checkpoint 通过 Barrier 对齐，将本地快照延迟至所有 Barrier 到达，成功实现了exactly once，但是当作业出现反压时，阻塞式的 Barrier 对齐反而会加剧作业的反压，甚至导致作业的不稳定。</p>
+<p>Chandy-Lamport 分布式快照的结束依赖于 Marker 的流动，而反压则会限制 Marker 的流动，导致快照的完成时间变长甚至超时。无论是哪种情况，都会导致 Checkpoint 的时间点落后于实际数据流较多。这时作业的计算进度是没有被持久化的，处于一个比较脆弱的状态，如果作业出于异常被动重启或者被用户主动重启，作业会回滚丢失一定的进度。如果 Checkpoint 连续超时且没有很好的监控，回滚丢失的进度可能高达一天以上，对于实时业务这通常是不可接受的。更糟糕的是，回滚后的作业落后的 Lag 更大，通常带来更大的反压，形成一个恶性循环。甚至Barrier 对齐本身可能成为一个反压的源头，影响上游算子的效率。</p>
+<h3 id="分析"><a href="#分析" class="headerlink" title="分析"></a>分析</h3><p>回顾Chandy-Lamport的论文</p>
+<p>当process q接收到marker时，需要做一个判断，判断自己是否已经进行过本地快照</p>
+<p><img class="lazy" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAABGdBTUEAALGPC/xhBQAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAAaADAAQAAAABAAAAAQAAAADa6r/EAAAAC0lEQVQIHWNgAAIAAAUAAY27m/MAAAAASUVORK5CYII=" data-src="https://raw.githubusercontent.com/wangyang377/blogImages/main/202402191525986.png" alt="image-20240219152512949"></p>
+<p>但是aligned checkpoint下，所以这个判断一定是永真的，即q一定没有进行过本地快照，也就避免了对算子输入队列的状态进行快照，但代价是比较不可控的 Checkpoint 时长和吞吐量的降低。</p>
+<p>相当于实现了一半论文。另一半需要unaligned checkpointing实现</p>
+<h2 id="unaligened-checkpointing"><a href="#unaligened-checkpointing" class="headerlink" title="unaligened checkpointing"></a>unaligened checkpointing</h2><p>在barrier对齐部分已经分析过，如果没有barrier对齐，那么只能实现at least once，但是那是在state只保存算子自己状态的情况下，如果同时对算子的输入输出队列进行快照，是可以实现基于unaligened checkpointing的exactly once的</p>
+<p>这部分官方文档说的非常清楚，就不画蛇添足了</p>
+<p><a target="_blank" rel="noopener" href="https://nightlies.apache.org/flink/flink-docs-master/docs/concepts/stateful-stream-processing/#unaligned-checkpointing">Stateful Stream Processing | Apache Flink</a></p>
+<p>Checkpointing can also be performed unaligned. The basic idea is that checkpoints can overtake all in-flight data(i.e., data stored in buffers) as long as the in-flight data becomes part of the operator state.</p>
+<p>Starting with Flink 1.11, checkpoints can be unaligned. Unaligned checkpoints contain in-flight data as part of the checkpoint state, which allows checkpoint barriers to overtake these buffers. Thus, the checkpoint duration becomes independent of the current throughput as checkpoint barriers are effectively not embedded into the stream of data anymore.</p>
+<p><img class="lazy" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAABGdBTUEAALGPC/xhBQAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAAaADAAQAAAABAAAAAQAAAADa6r/EAAAAC0lEQVQIHWNgAAIAAAUAAY27m/MAAAAASUVORK5CYII=" data-src="https://raw.githubusercontent.com/wangyang377/blogImages/main/202402191542375.png" alt="image-20240219154230344"></p>
+<p>The figure depicts how an operator handles unaligned checkpoint barriers:</p>
+<ul>
+<li>The operator reacts on the first barrier that is stored in its input buffers.</li>
+<li>It immediately forwards the barrier to the downstream operator by adding it to the end of the output buffers.</li>
+<li>The operator marks all overtaken records to be stored asynchronously and creates a snapshot of its own state.</li>
+</ul>
+<p>Consequently, the operator only briefly stops the processing of input to mark the buffers, forwards the barrier, and creates the snapshot of the other state.</p>
+<p>Unaligned checkpointing ensures that barriers are arriving at the sink as fast as possible. It’s especially suited for applications with at least one slow moving data path, where alignment times can reach hours. However, since it’s adding additional I&#x2F;O pressure, it doesn’t help when the I&#x2F;O to the state backends is the bottleneck. See the more in-depth discussion in <a target="_blank" rel="noopener" href="https://nightlies.apache.org/flink/flink-docs-master/docs/ops/state/checkpoints/#unaligned-checkpoints">ops</a> for other limitations.</p>
+<p>Note that savepoints will always be aligned.</p>
+<h3 id="问题-1"><a href="#问题-1" class="headerlink" title="问题"></a>问题</h3><ul>
+<li>由于要持久化缓存数据，State Size 会有比较大的增长，磁盘负载会加重。</li>
+<li>随着 State Size 增长，作业恢复时间可能增长，<a target="_blank" rel="noopener" href="https://cloud.tencent.com/solution/operation?from_column=20065&from=20065">运维</a>管理难度增加。</li>
+<li>目前看来，Unaligned Checkpoint 更适合容易产生高反压同时又比较重要的复杂作业。对于像数据 ETL 同步等简单作业，更轻量级的 Aligned Checkpoint 显然是更好的选择。</li>
+</ul>
+<h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><p><a target="_blank" rel="noopener" href="https://flink.apache.org/2020/10/15/from-aligned-to-unaligned-checkpoints-part-1-checkpoints-alignment-and-backpressure/">From Aligned to Unaligned Checkpoints - Part 1: Checkpoints, Alignment, and Backpressure | Apache Flink</a>(2020年写了part1，2024年都没有part2……)</p>
+<p><a target="_blank" rel="noopener" href="https://nightlies.apache.org/flink/flink-docs-master/docs/concepts/stateful-stream-processing/#unaligned-checkpointing">Stateful Stream Processing | Apache Flink</a></p>
+<p><a target="_blank" rel="noopener" href="https://cloud.tencent.com/developer/article/2016019">Flink新特性之非对齐检查点(unaligned checkpoint)详细解析-腾讯云开发者社区-腾讯云 (tencent.com)</a></p>
+<p><a target="_blank" rel="noopener" href="https://www.jianshu.com/p/3093f6d92750">https://www.jianshu.com/p/3093f6d92750</a></p>
+<p><a target="_blank" rel="noopener" href="https://www.whitewood.me/2018/05/13/Flink-%E8%BD%BB%E9%87%8F%E7%BA%A7%E5%BC%82%E6%AD%A5%E5%BF%AB%E7%85%A7-ABS-%E5%AE%9E%E7%8E%B0%E5%8E%9F%E7%90%86/">Flink 轻量级异步快照 ABS 实现原理 | 时间与精神的小屋 (whitewood.me)</a></p>
+
+<div class="article-footer fs14">
+    <section id="license">
+      <div class="header"><span>许可协议</span></div>
+      <div class="body"><p>本文采用 <a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">署名-非商业性使用-相同方式共享 4.0 国际</a> 许可协议，转载请注明出处。</p>
+</div>
+    </section>
+    </div>
+</article>
+<div class="related-wrap" id="read-next"><section class="body"><div class="item" id="prev"></div><div class="item" id="next"><div class="note">较早文章</div><a href="/2024/02/19/Flink(%E7%95%AA%E5%A4%96)%E2%80%94%E2%80%94%E2%80%94Chandy-Lamport%E5%88%86%E5%B8%83%E5%BC%8F%E5%BF%AB%E7%85%A7%E7%AE%97%E6%B3%95/">Flink(番外)———Chandy-Lamport分布式快照算法</a></div></section></div>
+
+
+
+
+
+
+<footer class="page-footer footnote"><hr><div class="text"><p>本站由 <a href="/">wangyang377</a> 使用 <a target="_blank" rel="noopener" href="https://github.com/xaoxuu/hexo-theme-stellar/tree/1.26.8">Stellar 1.26.8</a> 主题创建。<br>本博客所有文章除特别声明外，均采用 <a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a> 许可协议，转载请注明出处。</p>
+</div></footer>
+<div class='float-panel mobile-only blur' style='display:none'>
+  <button type='button' class='sidebar-toggle mobile' onclick='sidebar.toggle()'>
+    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 11c0-3.771 0-5.657 1.172-6.828C4.343 3 6.229 3 10 3h4c3.771 0 5.657 0 6.828 1.172C22 5.343 22 7.229 22 11v2c0 3.771 0 5.657-1.172 6.828C19.657 21 17.771 21 14 21h-4c-3.771 0-5.657 0-6.828-1.172C2 18.657 2 16.771 2 13z"/><path id="sep" stroke-linecap="round" d="M5.5 10h6m-5 4h4m4.5 7V3"/></g></svg>
+  </button>
+</div>
+<div class="main-mask" onclick="sidebar.toggle()"></div></div></div><div class="scripts">
+<script type="text/javascript">
+  const stellar = {
+    // 懒加载 css https://github.com/filamentgroup/loadCSS
+    loadCSS: (href, before, media, attributes) => {
+      var doc = window.document;
+      var ss = doc.createElement("link");
+      var ref;
+      if (before) {
+        ref = before;
+      } else {
+        var refs = (doc.body || doc.getElementsByTagName("head")[0]).childNodes;
+        ref = refs[refs.length - 1];
+      }
+      var sheets = doc.styleSheets;
+      if (attributes) {
+        for (var attributeName in attributes) {
+          if (attributes.hasOwnProperty(attributeName)) {
+            ss.setAttribute(attributeName, attributes[attributeName]);
+          }
+        }
+      }
+      ss.rel = "stylesheet";
+      ss.href = href;
+      ss.media = "only x";
+      function ready(cb) {
+        if (doc.body) {
+          return cb();
+        }
+        setTimeout(function () {
+          ready(cb);
+        });
+      }
+      ready(function () {
+        ref.parentNode.insertBefore(ss, before ? ref : ref.nextSibling);
+      });
+      var onloadcssdefined = function (cb) {
+        var resolvedHref = ss.href;
+        var i = sheets.length;
+        while (i--) {
+          if (sheets[i].href === resolvedHref) {
+            return cb();
+          }
+        }
+        setTimeout(function () {
+          onloadcssdefined(cb);
+        });
+      };
+      function loadCB() {
+        if (ss.addEventListener) {
+          ss.removeEventListener("load", loadCB);
+        }
+        ss.media = media || "all";
+      }
+      if (ss.addEventListener) {
+        ss.addEventListener("load", loadCB);
+      }
+      ss.onloadcssdefined = onloadcssdefined;
+      onloadcssdefined(loadCB);
+      return ss;
+    },
+
+    // 从 butterfly 和 volantis 获得灵感
+    loadScript: (src, opt) => new Promise((resolve, reject) => {
+      var script = document.createElement('script');
+      if (src.startsWith('/')){
+        src = stellar.config.root + src.substring(1);
+      }
+      script.src = src;
+      if (opt) {
+        for (let key of Object.keys(opt)) {
+          script[key] = opt[key]
+        }
+      } else {
+        // 默认异步，如果需要同步，第二个参数传入 {} 即可
+        script.async = true
+      }
+      script.onerror = reject
+      script.onload = script.onreadystatechange = function() {
+        const loadState = this.readyState
+        if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+        script.onload = script.onreadystatechange = null
+        resolve()
+      }
+      document.head.appendChild(script)
+    }),
+
+    // https://github.com/jerryc127/hexo-theme-butterfly
+    jQuery: (fn) => {
+      if (typeof jQuery === 'undefined') {
+        stellar.loadScript(stellar.plugins.jQuery).then(fn)
+      } else {
+        fn()
+      }
+    }
+  };
+  stellar.version = '1.26.8';
+  stellar.github = 'https://github.com/xaoxuu/hexo-theme-stellar/tree/1.26.8';
+  stellar.config = {
+    date_suffix: {
+      just: '刚刚',
+      min: '分钟前',
+      hour: '小时前',
+      day: '天前',
+      month: '个月前',
+    },
+    root : '/',
+  };
+
+  // required plugins (only load if needs)
+  stellar.plugins = {
+    jQuery: 'https://cdn.bootcdn.net/ajax/libs/jquery/3.7.1/jquery.min.js'
+  };
+
+  if ('local_search') {
+    stellar.search = {};
+    stellar.search.service = 'local_search';
+    if (stellar.search.service == 'local_search') {
+      let service_obj = Object.assign({}, {"field":"all","path":"/search.json","content":true,"sort":"-date"});
+      stellar.search[stellar.search.service] = service_obj;
+    }
+  }
+
+  // stellar js
+  stellar.plugins.stellar = Object.assign({"sites":"/js/plugins/sites.js","friends":"/js/plugins/friends.js","ghinfo":"/js/plugins/ghinfo.js","timeline":"/js/plugins/timeline.js","linkcard":"/js/plugins/linkcard.js","fcircle":"/js/plugins/fcircle.js","weibo":"/js/plugins/weibo.js","memos":"/js/plugins/memos.js","marked":"/js/plugins/marked.js"});
+
+  stellar.plugins.marked = Object.assign("https://cdn.bootcdn.net/ajax/libs/marked/4.0.18/marked.min.js");
+  // optional plugins
+  if ('true' == 'true') {
+    stellar.plugins.lazyload = Object.assign({"enable":true,"js":"https://cdn.bootcdn.net/ajax/libs/vanilla-lazyload/17.8.4/lazyload.min.js","transition":"fade"});
+  }
+  if ('true' == 'true') {
+    stellar.plugins.swiper = Object.assign({"enable":true,"css":"https://unpkg.com/swiper@10.3/swiper-bundle.min.css","js":"https://unpkg.com/swiper@10.3/swiper-bundle.min.js"});
+  }
+  if ('' == 'true') {
+    stellar.plugins.scrollreveal = Object.assign({"enable":null,"js":"https://cdn.bootcdn.net/ajax/libs/scrollReveal.js/4.0.9/scrollreveal.min.js","distance":"16px","duration":800,"interval":100,"scale":1});
+  }
+  if ('true' == 'true') {
+    stellar.plugins.preload = Object.assign({"enable":true,"service":"flying_pages","flying_pages":"https://cdn.bootcdn.net/ajax/libs/flying-pages/2.1.2/flying-pages.min.js"});
+  }
+  if ('true' == 'true') {
+    stellar.plugins.fancybox = Object.assign({"enable":true,"js":"https://cdn.bootcdn.net/ajax/libs/fancyapps-ui/5.0.22/fancybox/fancybox.umd.min.js","css":"https://cdn.bootcdn.net/ajax/libs/fancyapps-ui/5.0.22/fancybox/fancybox.min.css","selector":null});
+  }
+  if ('false' == 'true') {
+    stellar.plugins.heti = Object.assign({"enable":false,"css":"https://unpkg.com/heti@0.9.2/umd/heti.min.css","js":"https://unpkg.com/heti@0.9.2/umd/heti-addon.min.js"});
+  }
+  if ('true' == 'true') {
+    stellar.plugins.copycode = Object.assign({"enable":true,"js":"/js/plugins/copycode.js","default_text":"Copy","success_text":"Copied","toast":"复制成功"});
+  }
+</script>
+
+<!-- required -->
+<script src="/js/main.js?v=1.26.8" async></script>
+
+<!-- optional -->
+
+
+
+
+
+
+<!-- inject -->
+
+</div></body></html>
