@@ -1,0 +1,347 @@
+
+<!DOCTYPE html><html lang="zh-CN">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="hexo-theme" content="https://github.com/xaoxuu/hexo-theme-stellar/tree/1.26.8" theme-name="Stellar" theme-version="1.26.8">
+  
+  <meta name="generator" content="Hexo 7.1.1">
+  <meta http-equiv='x-dns-prefetch-control' content='on' />
+  
+  <meta name="renderer" content="webkit">
+  <meta name="force-rendering" content="webkit">
+  <meta http-equiv="X-UA-Compatible" content="IE=Edge,chrome=1">
+  <meta name="HandheldFriendly" content="True" >
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="theme-color" content="#f8f8f8">
+  
+  <title>Flink(番外)——状态一致性 - wangyang377_blog</title>
+
+  
+    <meta name="description" content="什么是一致性一致性指的是结果的正确性，一般从数据丢失、数据重复来评估。 举个例子： A向B发送三个1，B收到后进行累加操作  exactly-once：最终结果一定是3 at-most-once: 最终结果一定小于等于3 at-least-once: 最终结果一定大于等于3  同一进程的方法调用要么成功要么失败。但是分布式系统的调用请求，在成功处理和失败返回以外还有第三种可能性，即请求丢失，调用方">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Flink(番外)——状态一致性">
+<meta property="og:url" content="https://wangyang377.github.io/2024/02/19/Flink(%E7%95%AA%E5%A4%96)%E2%80%94%E2%80%94%E7%8A%B6%E6%80%81%E4%B8%80%E8%87%B4%E6%80%A7/index.html">
+<meta property="og:site_name" content="wangyang377_blog">
+<meta property="og:description" content="什么是一致性一致性指的是结果的正确性，一般从数据丢失、数据重复来评估。 举个例子： A向B发送三个1，B收到后进行累加操作  exactly-once：最终结果一定是3 at-most-once: 最终结果一定小于等于3 at-least-once: 最终结果一定大于等于3  同一进程的方法调用要么成功要么失败。但是分布式系统的调用请求，在成功处理和失败返回以外还有第三种可能性，即请求丢失，调用方">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://raw.githubusercontent.com/wangyang377/blogImages/main/202402192239422.png">
+<meta property="article:published_time" content="2024-02-19T15:31:57.565Z">
+<meta property="article:modified_time" content="2024-02-20T02:02:55.448Z">
+<meta property="article:author" content="wangyang377">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://raw.githubusercontent.com/wangyang377/blogImages/main/202402192239422.png">
+  
+  
+  
+  
+
+  <!-- feed -->
+  
+
+  <link rel="stylesheet" href="/css/main.css?v=1.26.8">
+
+  
+
+  
+
+  
+  
+</head>
+<body>
+
+<div class="l_body content tech" id="start" layout="post" ><aside class="l_left"><div class="sidebar-container">
+
+
+<header class="header"><div class="logo-wrap"><a class="title" href="/"><div class="main" ff="title">wangyang377_blog</div></a></div></header>
+
+<div class="nav-area">
+<div class="search-wrapper" id="search-wrapper"><form class="search-form"><a class="search-button" onclick="document.getElementById(&quot;search-input&quot;).focus();"><svg t="1705074644177" viewBox="0 0 1025 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="1560" width="200" height="200"><path d="M1008.839137 935.96571L792.364903 719.491476a56.783488 56.783488 0 0 0-80.152866 0 358.53545 358.53545 0 1 1 100.857314-335.166073 362.840335 362.840335 0 0 1-3.689902 170.145468 51.248635 51.248635 0 1 0 99.217358 26.444296 462.057693 462.057693 0 1 0-158.255785 242.303546l185.930047 185.725053a51.248635 51.248635 0 0 0 72.568068 0 51.248635 51.248635 0 0 0 0-72.978056z" p-id="1561"></path><path d="M616.479587 615.969233a50.428657 50.428657 0 0 0-61.498362-5.534852 174.655348 174.655348 0 0 1-177.525271 3.484907 49.403684 49.403684 0 0 0-58.833433 6.76482l-3.074918 2.869923a49.403684 49.403684 0 0 0 8.609771 78.10292 277.767601 277.767601 0 0 0 286.992355-5.739847 49.403684 49.403684 0 0 0 8.404776-76.667958z" p-id="1562"></path></svg></a><input type="text" class="search-input" id="search-input" placeholder="站内搜索"></form><div id="search-result"></div><div class="search-no-result">没有找到内容！</div></div>
+
+
+<nav class="menu dis-select"></nav>
+</div>
+<div class="widgets">
+
+<widget class="widget-wrapper toc single" id="data-toc" collapse="false"><div class="widget-header dis-select"><span class="name">本文目录</span></div><div class="widget-body fs14"><div class="doc-tree active"><ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BB%80%E4%B9%88%E6%98%AF%E4%B8%80%E8%87%B4%E6%80%A7"><span class="toc-text">什么是一致性</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%AB%AF%E5%88%B0%E7%AB%AF%E7%9A%84exactly-once"><span class="toc-text">端到端的exactly once</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%B9%82%E7%AD%89%E5%86%99%E5%85%A5"><span class="toc-text">幂等写入</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%8B%E5%8A%A1%E5%86%99%E5%85%A5"><span class="toc-text">事务写入</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E9%A2%84%E5%86%99%E6%97%A5%E5%BF%97"><span class="toc-text">预写日志</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%B8%A4%E9%98%B6%E6%AE%B5%E6%8F%90%E4%BA%A4"><span class="toc-text">两阶段提交</span></a></li></ol></li></ol></div></div></widget>
+
+
+
+
+
+
+
+<widget class="widget-wrapper post-list"><div class="widget-header dis-select"><span class="name">最近更新</span></div><div class="widget-body fs14"><a class="item title active" href="/2024/02/19/Flink(%E7%95%AA%E5%A4%96)%E2%80%94%E2%80%94%E7%8A%B6%E6%80%81%E4%B8%80%E8%87%B4%E6%80%A7/"><span class="title">Flink(番外)——状态一致性</span><svg class="active-icon" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><path fill="currentColor" d="M21 11.098v4.993c0 3.096 0 4.645-.734 5.321c-.35.323-.792.526-1.263.58c-.987.113-2.14-.907-4.445-2.946c-1.02-.901-1.529-1.352-2.118-1.47a2.225 2.225 0 0 0-.88 0c-.59.118-1.099.569-2.118 1.47c-2.305 2.039-3.458 3.059-4.445 2.945a2.238 2.238 0 0 1-1.263-.579C3 20.736 3 19.188 3 16.091v-4.994C3 6.81 3 4.666 4.318 3.333C5.636 2 7.758 2 12 2c4.243 0 6.364 0 7.682 1.332C21 4.665 21 6.81 21 11.098" opacity=".5"/><path fill="currentColor" d="M9 5.25a.75.75 0 0 0 0 1.5h6a.75.75 0 0 0 0-1.5z"/></svg></a><a class="item title" href="/2024/02/19/Flink(5)%E2%80%94%E2%80%94%E5%AE%B9%E9%94%99%E6%9C%BA%E5%88%B6%E3%80%90checkpoint&barrier%E3%80%91/"><span class="title">Flink(5)——容错机制【checkpoint&barrier】</span></a><a class="item title" href="/2024/02/15/%E7%AE%80%E6%98%93%E5%8D%9A%E5%AE%A2%E6%90%AD%E5%BB%BA%EF%BC%9Ahexo+gitpages+picgo+typora/"><span class="title">简易博客搭建：hexo+gitpages+picgo+typora</span></a><a class="item title" href="/2024/02/19/Flink(%E7%95%AA%E5%A4%96)%E2%80%94%E2%80%94%E2%80%94Chandy-Lamport%E5%88%86%E5%B8%83%E5%BC%8F%E5%BF%AB%E7%85%A7%E7%AE%97%E6%B3%95/"><span class="title">Flink(番外)———Chandy-Lamport分布式快照算法</span></a><a class="item title" href="/2024/02/17/Flink(4)%E2%80%94%E2%80%94%E7%8A%B6%E6%80%81/"><span class="title">Flink(4)——状态</span></a><a class="item title" href="/2024/02/17/Flink(3)%E2%80%94%E2%80%94%E6%97%B6%E9%97%B4%E4%B8%8E%E7%AA%97%E5%8F%A3/"><span class="title">Flink(3)——时间与窗口</span></a><a class="item title" href="/2024/02/18/Flink(2)%E2%80%94%E2%80%94%E9%9B%86%E7%BE%A4%E9%83%A8%E7%BD%B2/"><span class="title">Flink(2)——集群部署</span></a><a class="item title" href="/2024/02/18/Spark(1)%E2%80%94%E2%80%94wordcount/"><span class="title">Spark(1)——wordcount</span></a><a class="item title" href="/2024/02/17/Flink(1)%E2%80%94%E2%80%94%E5%85%A5%E9%97%A8%EF%BC%9Awordcount/"><span class="title">Flink(1)——入门：wordcount</span></a><a class="item title" href="/2024/02/16/MapReduce%E2%80%94%E2%80%94countword/"><span class="title">MapReduce——countword</span></a></div></widget>
+</div>
+
+</div></aside><div class="l_main" id="main">
+
+
+
+
+
+<div class="article banner top">
+  <div class="content">
+    
+<div class="top bread-nav footnote"><div class="left"><div class="flex-row" id="breadcrumb"><a class="cap breadcrumb" href="/">主页</a>
+<span class="sep"></span><a class="cap breadcrumb" href="/">文章</a><span class="sep"></span><a class="cap breadcrumb-link" href="/categories/%E5%A4%A7%E6%95%B0%E6%8D%AE/">大数据</a> <span class="sep"></span> <a class="cap breadcrumb-link" href="/categories/%E5%A4%A7%E6%95%B0%E6%8D%AE/Flink/">Flink</a></div>
+<div class="flex-row" id="post-meta"><span class="text created">发布于：<time datetime="2024-02-19T15:31:57.565Z">2024-02-19</time></span><span class="sep updated"></span><span class="text updated">更新于：<time datetime="2024-02-20T02:02:55.448Z">2024-02-20</time></span></div></div>
+</div>
+
+    
+    <div class="bottom">
+      <div class="text-area">
+        <h1 class="text title"><span>Flink(番外)——状态一致性</span></h1>
+      </div>
+    </div>
+    
+  </div>
+  </div><article class="md-text content"><h2 id="什么是一致性"><a href="#什么是一致性" class="headerlink" title="什么是一致性"></a>什么是一致性</h2><p>一致性指的是结果的正确性，一般从数据丢失、数据重复来评估。</p>
+<p>举个例子：</p>
+<p>A向B发送三个1，B收到后进行累加操作</p>
+<ul>
+<li>exactly-once：最终结果一定是3</li>
+<li>at-most-once: 最终结果一定小于等于3</li>
+<li>at-least-once: 最终结果一定大于等于3</li>
+</ul>
+<p>同一进程的方法调用要么成功要么失败。但是分布式系统的调用请求，在成功处理和失败返回以外还有第三种可能性，即请求丢失，调用方无法确定请求是否送达。</p>
+<p>这种情况下，如果不做重试，就是 at-most-once 送达语义，每个请求都只会被发送一次，并且永远不会重试。如果调用者通过重试试图保证请求会被处理，那就是 at-least-once 送达语义。</p>
+<p>理想情况 exactly-once 总是基于 at-least-once 实现的。如果一个请求必须被处理但是不能被处理多次，那么，在 at-least-once 的语义基础上，接收者还必须对请求进行去重。</p>
+<p>Flink 所说的 exactly-once 强调的，也是<strong>从结果来看</strong>，数据恰好被处理一次。</p>
+<h2 id="端到端的exactly-once"><a href="#端到端的exactly-once" class="headerlink" title="端到端的exactly once"></a>端到端的exactly once</h2><p>在flink checkpoint部分，已经说明了checkpoint可以保证Flink内部状态的一致性，结合source的offset可以做到精确一次。但是这还不够，这只是flink内部状态的一致，并不意味着端到端的exactly once</p>
+<p>在实际应用中，一般要保证从用户的角度看来，最终消费的数据是正确的。而用户或者外部应用不会直接从Flink内部的状态读取数据，往往需要我们将处理结果写入外部存储中。这就要求我们不仅要考虑Flink内部数据的处理转换，还涉及到从外部数据源读取，以及写入外部持久化系统，整个应用处理流程从头到尾都应该是正确的。</p>
+<p>例如【1,2,3,barrier,4,5,6,barrier,7】处理到5时出错，checkpoint恢复，从4开始重新处理，但是上一回合4已经sink输出到外部系统了，此时4就会写入两次。所以这时，我们只保证了端到端的at-least-once语义。</p>
+<p>所以完整的流处理应用，应该包括了数据源、流处理器和外部存储系统三个部分。这个完整应用的一致性，就叫做“端到端（end-to-end）的状态一致性”，它取决于三个组件中最弱的那一环。一般来说，能否达到at-least-once一致性级别，主要看数据源能够重放数据；而能否达到exactly-once级别，流处理器内部、数据源、外部存储都要有相应的保证机制。</p>
+<p><img class="lazy" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAABGdBTUEAALGPC/xhBQAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAAaADAAQAAAABAAAAAQAAAADa6r/EAAAAC0lEQVQIHWNgAAIAAAUAAY27m/MAAAAASUVORK5CYII=" data-src="https://raw.githubusercontent.com/wangyang377/blogImages/main/202402192239422.png" alt="image.png"></p>
+<p>为了实现端到端exactly-once，我们还需要对外部存储系统、以及Sink连接器有额外的要求。能够保证exactly-once一致性的写入方式有两种：</p>
+<ul>
+<li>幂等写入</li>
+<li>事务写入</li>
+</ul>
+<h2 id="幂等写入"><a href="#幂等写入" class="headerlink" title="幂等写入"></a>幂等写入</h2><p>所谓“幂等”操作，就是说一个操作可以重复执行很多次，但只导致一次结果更改。</p>
+<p>典型的就是利用数据库的主键唯一特性和redis的键值存储。</p>
+<p>但是需要注意的是，幂等并没有真正解决数据重复计算、写入的问题；而是说，重复写入也没关系，结果不会改变。</p>
+<p>所以幂等写入在遇到故障进行恢复时，有可能会出现短暂的不一致。</p>
+<p>因为保存点完成之后到发生故障之间的数据，其实已经写入了一遍，回滚的时候并不能消除它们。</p>
+<p>如果有一个外部应用读取写入的数据，可能会看到奇怪的现象：短时间内，结果会突然“跳回”到之前的某个值，然后“重播”一段之前的数据。不过当数据的重放逐渐超过发生故障的点的时候，最终的结果还是一致的。</p>
+<h2 id="事务写入"><a href="#事务写入" class="headerlink" title="事务写入"></a>事务写入</h2><p>事务写入又分为两种情况，外部存储支持还是不支持事务，分别对应预写日志和和两阶段提交</p>
+<h3 id="预写日志"><a href="#预写日志" class="headerlink" title="预写日志"></a>预写日志</h3><p>我们发现，事务提交是需要外部存储系统支持事务的，否则没有办法真正实现写入的回撤。那对于一般不支持事务的存储系统，能够实现事务写入呢？</p>
+<p>预写日志（WAL）就是一种非常简单的方式。具体步骤是：</p>
+<ul>
+<li>先把结果数据作为日志（log）状态保存起来</li>
+<li>进行检查点保存时，也会将这些结果数据一并做持久化存储</li>
+<li>在收到检查点完成的通知时，将所有结果一次性写入外部系统。</li>
+<li>在成功写入所有数据后，在内部再次确认相应的检查点，将确认信息也进行持久化保存。这才代表着检查点的真正完成。</li>
+</ul>
+<p>我们会发现，这种方式类似于检查点完成时做一个批处理，一次性的写入会带来一些性能上的问题；而优点就是比较简单，由于数据提前在状态后端中做了缓存，所以无论什么外部存储系统，理论上都能用这种方式一批搞定。在Flink中DataStream API提供了一个模板类GenericWriteAheadSink，用来实现这种事务型的写入方式。</p>
+<p>需要注意的是，预写日志这种一批写入的方式，有可能会写入失败；所以在执行写入动作之后，必须等待发送成功的返回确认消息。在成功写入所有数据后，在内部再次确认相应的检查点，这才代表着检查点的真正完成。这里需要将确认信息也进行持久化保存，在故障恢复时，只有存在对应的确认信息，才能保证这批数据已经写入，可以恢复到对应的检查点位置。</p>
+<p>但这种“再次确认”的方式，也会有一些缺陷。如果我们的检查点已经成功保存、数据也成功地一批写入到了外部系统，但是最终保存确认信息时出现了故障，Flink最终还是会认为没有成功写入。于是发生故障时，不会使用这个检查点，而是需要回退到上一个；这样就会导致这批数据的重复写入。</p>
+<h3 id="两阶段提交"><a href="#两阶段提交" class="headerlink" title="两阶段提交"></a>两阶段提交</h3><p>前面提到的各种实现exactly-once的方式，多少都有点缺陷；而更好的方法就是两阶段提交（2PC）。</p>
+<p>顾名思义，它的想法是分成两个阶段：先做“预提交”，等检查点完成之后再正式提交。这种提交方式是真正基于事务的，它需要外部系统提供事务支持。</p>
+<p>具体的实现步骤为：</p>
+<ul>
+<li>当第一条数据到来时，或者收到检查点的分界线时，Sink任务都会启动一个事务。</li>
+<li>接下来接收到的所有数据，都通过这个事务写入外部系统；这时由于事务没有提交，所以数据尽管写入了外部系统，但是不可用，是“预提交”的状态。</li>
+<li>当Sink任务收到JobManager发来检查点完成的通知时，正式提交事务，写入的结果就真正可用了。</li>
+</ul>
+<p>当中间发生故障时，当前未提交的事务就会回滚，于是所有写入外部系统的数据也就实现了撤回。</p>
+<p>这种两阶段提交（2PC）的方式充分利用了Flink现有的检查点机制：</p>
+<p>分界线的到来，就标志着开始一个新事务；而收到来自JobManager的checkpoint成功的消息，就是提交事务的指令。每个结果数据的写入，依然是流式的，不再有预写日志时批处理的性能问题；最终提交时，也只需要额外发送一个确认信息。所以2PC协议不仅真正意义上实现了exactly-once，而且通过搭载Flink的检查点机制来实现事务，只给系统增加了很少的开销。</p>
+<p>Flink提供了TwoPhaseCommitSinkFunction接口，方便我们自定义实现两阶段提交的SinkFunction的实现，提供了真正端到端的exactly-once保证。新的Sink架构，使用的是TwoPhaseCommittingSink接口。</p>
+<p>不过两阶段提交虽然精巧，却对外部系统有很高的要求。这里将2PC对外部系统的要求列举如下：</p>
+<ul>
+<li>外部系统必须提供事务支持，或者Sink任务必须能够模拟外部系统上的事务。</li>
+<li>在检查点的间隔期间里，必须能够开启一个事务并接受数据写入。</li>
+<li>在收到检查点完成的通知之前，事务必须是“等待提交”的状态。在故障恢复的情况下，这可能需要一些时间。如果这个时候外部系统关闭事务（例如超时了），那么未提交的数据就会丢失。</li>
+<li>Sink任务必须能够在进程失败后恢复事务。</li>
+<li>提交事务必须是幂等操作。也就是说，事务的重复提交应该是无效的。</li>
+</ul>
+<p>可见，2PC在实际应用同样会受到比较大的限制。具体在项目中的选型，最终还应该是一致性级别和处理性能的权衡考量。</p>
+
+<div class="article-footer fs14">
+    <section id="license">
+      <div class="header"><span>许可协议</span></div>
+      <div class="body"><p>本文采用 <a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">署名-非商业性使用-相同方式共享 4.0 国际</a> 许可协议，转载请注明出处。</p>
+</div>
+    </section>
+    </div>
+</article>
+<div class="related-wrap" id="read-next"><section class="body"><div class="item" id="prev"></div><div class="item" id="next"><div class="note">较早文章</div><a href="/2024/02/19/Flink(5)%E2%80%94%E2%80%94%E5%AE%B9%E9%94%99%E6%9C%BA%E5%88%B6%E3%80%90checkpoint&barrier%E3%80%91/">Flink(5)——容错机制【checkpoint&barrier】</a></div></section></div>
+
+
+
+
+
+
+<footer class="page-footer footnote"><hr><div class="text"><p>本站由 <a href="/">wangyang377</a> 使用 <a target="_blank" rel="noopener" href="https://github.com/xaoxuu/hexo-theme-stellar/tree/1.26.8">Stellar 1.26.8</a> 主题创建。<br>本博客所有文章除特别声明外，均采用 <a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a> 许可协议，转载请注明出处。</p>
+</div></footer>
+<div class='float-panel mobile-only blur' style='display:none'>
+  <button type='button' class='sidebar-toggle mobile' onclick='sidebar.toggle()'>
+    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 11c0-3.771 0-5.657 1.172-6.828C4.343 3 6.229 3 10 3h4c3.771 0 5.657 0 6.828 1.172C22 5.343 22 7.229 22 11v2c0 3.771 0 5.657-1.172 6.828C19.657 21 17.771 21 14 21h-4c-3.771 0-5.657 0-6.828-1.172C2 18.657 2 16.771 2 13z"/><path id="sep" stroke-linecap="round" d="M5.5 10h6m-5 4h4m4.5 7V3"/></g></svg>
+  </button>
+</div>
+<div class="main-mask" onclick="sidebar.toggle()"></div></div></div><div class="scripts">
+<script type="text/javascript">
+  const stellar = {
+    // 懒加载 css https://github.com/filamentgroup/loadCSS
+    loadCSS: (href, before, media, attributes) => {
+      var doc = window.document;
+      var ss = doc.createElement("link");
+      var ref;
+      if (before) {
+        ref = before;
+      } else {
+        var refs = (doc.body || doc.getElementsByTagName("head")[0]).childNodes;
+        ref = refs[refs.length - 1];
+      }
+      var sheets = doc.styleSheets;
+      if (attributes) {
+        for (var attributeName in attributes) {
+          if (attributes.hasOwnProperty(attributeName)) {
+            ss.setAttribute(attributeName, attributes[attributeName]);
+          }
+        }
+      }
+      ss.rel = "stylesheet";
+      ss.href = href;
+      ss.media = "only x";
+      function ready(cb) {
+        if (doc.body) {
+          return cb();
+        }
+        setTimeout(function () {
+          ready(cb);
+        });
+      }
+      ready(function () {
+        ref.parentNode.insertBefore(ss, before ? ref : ref.nextSibling);
+      });
+      var onloadcssdefined = function (cb) {
+        var resolvedHref = ss.href;
+        var i = sheets.length;
+        while (i--) {
+          if (sheets[i].href === resolvedHref) {
+            return cb();
+          }
+        }
+        setTimeout(function () {
+          onloadcssdefined(cb);
+        });
+      };
+      function loadCB() {
+        if (ss.addEventListener) {
+          ss.removeEventListener("load", loadCB);
+        }
+        ss.media = media || "all";
+      }
+      if (ss.addEventListener) {
+        ss.addEventListener("load", loadCB);
+      }
+      ss.onloadcssdefined = onloadcssdefined;
+      onloadcssdefined(loadCB);
+      return ss;
+    },
+
+    // 从 butterfly 和 volantis 获得灵感
+    loadScript: (src, opt) => new Promise((resolve, reject) => {
+      var script = document.createElement('script');
+      if (src.startsWith('/')){
+        src = stellar.config.root + src.substring(1);
+      }
+      script.src = src;
+      if (opt) {
+        for (let key of Object.keys(opt)) {
+          script[key] = opt[key]
+        }
+      } else {
+        // 默认异步，如果需要同步，第二个参数传入 {} 即可
+        script.async = true
+      }
+      script.onerror = reject
+      script.onload = script.onreadystatechange = function() {
+        const loadState = this.readyState
+        if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+        script.onload = script.onreadystatechange = null
+        resolve()
+      }
+      document.head.appendChild(script)
+    }),
+
+    // https://github.com/jerryc127/hexo-theme-butterfly
+    jQuery: (fn) => {
+      if (typeof jQuery === 'undefined') {
+        stellar.loadScript(stellar.plugins.jQuery).then(fn)
+      } else {
+        fn()
+      }
+    }
+  };
+  stellar.version = '1.26.8';
+  stellar.github = 'https://github.com/xaoxuu/hexo-theme-stellar/tree/1.26.8';
+  stellar.config = {
+    date_suffix: {
+      just: '刚刚',
+      min: '分钟前',
+      hour: '小时前',
+      day: '天前',
+      month: '个月前',
+    },
+    root : '/',
+  };
+
+  // required plugins (only load if needs)
+  stellar.plugins = {
+    jQuery: 'https://cdn.bootcdn.net/ajax/libs/jquery/3.7.1/jquery.min.js'
+  };
+
+  if ('local_search') {
+    stellar.search = {};
+    stellar.search.service = 'local_search';
+    if (stellar.search.service == 'local_search') {
+      let service_obj = Object.assign({}, {"field":"all","path":"/search.json","content":true,"sort":"-date"});
+      stellar.search[stellar.search.service] = service_obj;
+    }
+  }
+
+  // stellar js
+  stellar.plugins.stellar = Object.assign({"sites":"/js/plugins/sites.js","friends":"/js/plugins/friends.js","ghinfo":"/js/plugins/ghinfo.js","timeline":"/js/plugins/timeline.js","linkcard":"/js/plugins/linkcard.js","fcircle":"/js/plugins/fcircle.js","weibo":"/js/plugins/weibo.js","memos":"/js/plugins/memos.js","marked":"/js/plugins/marked.js"});
+
+  stellar.plugins.marked = Object.assign("https://cdn.bootcdn.net/ajax/libs/marked/4.0.18/marked.min.js");
+  // optional plugins
+  if ('true' == 'true') {
+    stellar.plugins.lazyload = Object.assign({"enable":true,"js":"https://cdn.bootcdn.net/ajax/libs/vanilla-lazyload/17.8.4/lazyload.min.js","transition":"fade"});
+  }
+  if ('true' == 'true') {
+    stellar.plugins.swiper = Object.assign({"enable":true,"css":"https://unpkg.com/swiper@10.3/swiper-bundle.min.css","js":"https://unpkg.com/swiper@10.3/swiper-bundle.min.js"});
+  }
+  if ('' == 'true') {
+    stellar.plugins.scrollreveal = Object.assign({"enable":null,"js":"https://cdn.bootcdn.net/ajax/libs/scrollReveal.js/4.0.9/scrollreveal.min.js","distance":"16px","duration":800,"interval":100,"scale":1});
+  }
+  if ('true' == 'true') {
+    stellar.plugins.preload = Object.assign({"enable":true,"service":"flying_pages","flying_pages":"https://cdn.bootcdn.net/ajax/libs/flying-pages/2.1.2/flying-pages.min.js"});
+  }
+  if ('true' == 'true') {
+    stellar.plugins.fancybox = Object.assign({"enable":true,"js":"https://cdn.bootcdn.net/ajax/libs/fancyapps-ui/5.0.22/fancybox/fancybox.umd.min.js","css":"https://cdn.bootcdn.net/ajax/libs/fancyapps-ui/5.0.22/fancybox/fancybox.min.css","selector":null});
+  }
+  if ('false' == 'true') {
+    stellar.plugins.heti = Object.assign({"enable":false,"css":"https://unpkg.com/heti@0.9.2/umd/heti.min.css","js":"https://unpkg.com/heti@0.9.2/umd/heti-addon.min.js"});
+  }
+  if ('true' == 'true') {
+    stellar.plugins.copycode = Object.assign({"enable":true,"js":"/js/plugins/copycode.js","default_text":"Copy","success_text":"Copied","toast":"复制成功"});
+  }
+</script>
+
+<!-- required -->
+<script src="/js/main.js?v=1.26.8" async></script>
+
+<!-- optional -->
+
+
+
+
+
+
+<!-- inject -->
+
+</div></body></html>
